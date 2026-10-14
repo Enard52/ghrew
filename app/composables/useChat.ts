@@ -251,7 +251,9 @@ export function useChat(
       selectedChannel,
       authenticated,
       channelsQuery.isPending,
+      channelsQuery.isError,
       vaultChannelsQuery.isPending,
+      vaultChannelsQuery.isError,
     ],
     ([value]) => {
       if (value.some((item) => item.id === selectedChannel.value)) {
@@ -264,7 +266,9 @@ export function useChat(
         !preview.value &&
         (!authenticated.value ||
           channelsQuery.isPending.value ||
-          (mailbox?.value?.vault && vaultChannelsQuery.isPending.value))
+          channelsQuery.isError.value ||
+          (mailbox?.value?.vault &&
+            (vaultChannelsQuery.isPending.value || vaultChannelsQuery.isError.value)))
       )
         return;
       pendingInitialChannel = "";

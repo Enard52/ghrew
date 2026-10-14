@@ -131,6 +131,7 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
     );
   });
   let signedOut = false;
+  let vaultListAttempts = 0;
   const requests: { url: string; authorization: string | undefined }[] = [];
   page.on("request", (request) =>
     requests.push({
@@ -164,6 +165,11 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
     }
     if (path === "/api/vault") {
       const body = route.request().postDataJSON();
+      if (body.operation.op === "list" && vaultListAttempts++ === 0)
+        return route.fulfill({
+          status: 409,
+          json: { error: "Another workspace operation is in progress. Retry shortly." },
+        });
       if (body.operation.op === "list")
         return route.fulfill({
           json: {
@@ -265,6 +271,11 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
   });
   await page.goto("/?workspace=old-team/ghrew-chat&channel=private-channel");
   await expect(page.locator(".workspace-switch")).toHaveText("team");
+  await expect(
+    page.getByText("Conversations are busy. Try again shortly."),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/w\/old-team\/c\/private-channel$/);
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Private room", exact: true }),
   ).toBeVisible();

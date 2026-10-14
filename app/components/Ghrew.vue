@@ -195,6 +195,11 @@ const queryError = computed(
     chat.messagesQuery.error.value ||
     chat.vaultChannelsQuery.error.value,
 );
+const queryErrorMessage = computed(() =>
+  queryError.value?.message.startsWith("Another workspace operation")
+    ? "Conversations are busy. Try again shortly."
+    : queryError.value?.message || "",
+);
 const sendError = computed(() => chat.sendMutation.error.value?.message || "");
 const isPending = chat.sendMutation.isPending;
 const loading = computed(
@@ -702,7 +707,7 @@ function dayLabel(index: number) {
         class="notice error-notice"
         role="alert"
       >
-        <span>{{ queryError.message }}</span
+        <span>{{ queryErrorMessage }}</span
         ><UButton
           label="Retry"
           size="xs"
