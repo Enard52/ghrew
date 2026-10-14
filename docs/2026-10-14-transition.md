@@ -11,8 +11,9 @@ workspace data or existing browser sessions.
 
 ## Retired resources
 
-The following repositories have Actions disabled and are archived, preserving
-their data and allowing recovery:
+The following test repositories were first backed up and archived, then deleted
+after the user explicitly chose a fresh Ghrew sandbox. Each deletion was verified
+by a subsequent API response of 404:
 
 - `inchidev/gitwok-chat`
 - `inchidev/gitwok-auth`
@@ -31,14 +32,19 @@ issue comments and Discussions, and the previous local recovery material.
 Secrets in GitHub Actions cannot be exported through the API. The backup is
 not a guarantee of restoring every credential or an existing App identity.
 
-## Remaining cleanup
+## GitHub App cleanup
 
-These GitHub App registrations and installations still need removal through
-signed-in GitHub settings: `gitwok-chat`, `gitwok-inchidev`, `gitwok-creator`,
-and `gitwok-sandbox`. The settings browser was signed out during this work;
-App deletion has not been claimed as complete. The `gitwok-sandbox` organization
-is retained with archived repositories until a fresh-versus-migration choice is
-settled. No organization access settings were changed during this transition.
+With the user's explicit deletion confirmation, these four registrations were
+deleted through signed-in Chrome: `gitwok-chat`, `gitwok-inchidev`,
+`gitwok-creator`, and `gitwok-sandbox`. Both organizations' registered App lists
+showed **No GitHub Apps** afterward. The API independently confirmed zero App
+installations in both `inchidev` and `gitwok-sandbox`.
+
+The old `gitwok-sandbox` organization remains as an empty namespace, with no
+repositories or App installations. The original source repository remains
+archived to preserve its PR history. No organization access settings were changed.
+Fresh Ghrew authentication will use new resources; old conversations, credentials
+and App identities are not being migrated.
 
 ## Ghrew deployment and plans
 
