@@ -26,6 +26,7 @@
   "dependencies": {
     "@fontsource/be-vietnam-pro": "^5.2.8",
     "@nuxt/ui": "4.11.3",
+    "@primer/primitives": "^11.10.0",
     "@tanstack/vue-query": "5.104.2",
     "@vueuse/core": "15.0.0",
     "@vueuse/nuxt": "15.0.0",
@@ -39,6 +40,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "5.20261014.1",
     "@iconify-json/lucide": "1.2.144",
+    "@iconify-json/octicon": "^1.2.39",
     "@playwright/test": "^1.64.0",
     "@types/node": "^24.19.2",
     "esbuild": "0.28.2",

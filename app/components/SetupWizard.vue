@@ -240,9 +240,7 @@ watch(
           :disabled="busy"
       /></UFormField>
       <div class="space-y-2 text-sm">
-        <p>
-          <strong>ghrew-chat</strong> — public channels, visible on GitHub.
-        </p>
+        <p><strong>ghrew-chat</strong> — public channels, visible on GitHub.</p>
         <p>
           <strong>ghrew-vault</strong> — one private repository, administrators
           only.

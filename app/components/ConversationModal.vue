@@ -158,18 +158,12 @@ async function create() {
           ><UInput v-model="name" class="w-full" :disabled="busy"
         /></UFormField>
         <p v-if="kind === 'public'" class="text-muted text-sm">
-          Stored in {{ repository }}. A public repository makes these messages
-          visible on GitHub to everyone.
+          Everyone with access to this workspace can read this conversation.
         </p>
         <template v-else>
           <p class="text-muted text-sm">
-            Stored in the administrator-only ghrew-vault. Selected participants
-            {{
-              mailbox?.backend
-                ? "access messages through your Ghrew backend."
-                : "receive encrypted responses through GitHub Actions."
-            }}
-            Workspace administrators can access the vault.
+            Only invited people and workspace administrators can read this
+            conversation.
           </p>
           <p v-if="members.isFetching.value" role="status">
             Loading workspace members…

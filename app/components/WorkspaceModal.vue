@@ -35,9 +35,7 @@ const repos = useQuery({
 const visibleRepositories = computed(() =>
   (repos.data.value || []).filter(
     (repo) =>
-      !["ghrew-vault", "ghrew-auth"].includes(
-        repo.full_name.split("/")[1]!,
-      ) &&
+      !["ghrew-vault", "ghrew-auth"].includes(repo.full_name.split("/")[1]!) &&
       (!props.publicOnly || !repo.private),
   ),
 );
@@ -77,7 +75,7 @@ function connect(value: string) {
           v-for="owner in organizations"
           :key="owner"
           :label="`Organization: ${owner}`"
-          icon="i-lucide-building-2"
+          icon="i-octicon-organization-16"
           color="neutral"
           variant="outline"
           block
@@ -103,7 +101,7 @@ function connect(value: string) {
           color="neutral"
           variant="ghost"
           block
-          :icon="repo.private ? 'i-lucide-lock-keyhole' : 'i-lucide-globe'"
+          :icon="repo.private ? 'i-octicon-lock-16' : 'i-octicon-globe-16'"
           :label="repo.full_name"
           :disabled="!repo.has_discussions"
           :ui="{ base: 'justify-start' }"
@@ -135,7 +133,7 @@ function connect(value: string) {
           <UButton
             type="submit"
             label="Open workspace"
-            icon="i-lucide-arrow-right"
+            icon="i-octicon-arrow-right-16"
             :disabled="!token"
           />
         </UForm>
@@ -144,7 +142,7 @@ function connect(value: string) {
         <h3>Start a workspace</h3>
         <UButton
           label="Create organization workspace"
-          icon="i-lucide-plus"
+          icon="i-octicon-plus-16"
           class="my-3"
           @click="
             open = false;
@@ -166,7 +164,7 @@ function connect(value: string) {
             color="neutral"
             variant="outline"
             size="sm"
-            trailing-icon="i-lucide-arrow-up-right"
+            trailing-icon="i-octicon-link-external-16"
           />
           <UButton
             label="Install Ghrew App"
@@ -178,7 +176,7 @@ function connect(value: string) {
           />
           <UButton
             label="Refresh list"
-            icon="i-lucide-refresh-cw"
+            icon="i-octicon-sync-16"
             color="neutral"
             variant="ghost"
             size="sm"

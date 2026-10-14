@@ -7,6 +7,11 @@ const props = defineProps<{
   preview?: boolean;
   error?: string;
 }>();
+const shortcutKey = computed(() =>
+  import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
+    ? "⌘"
+    : "Ctrl",
+);
 const model = defineModel<string>({ required: true });
 const emit = defineEmits<{ send: [] }>();
 function shortcut(event: KeyboardEvent) {
@@ -44,15 +49,15 @@ function shortcut(event: KeyboardEvent) {
     <div class="composer-bottom">
       <span id="draft-status" class="draft-status">{{
         model
-          ? "Draft saved on this device"
+          ? "Draft saved"
           : preview
-            ? "Preview · stays on this device"
-            : "⌘ / Ctrl + Enter to send"
+            ? "Demo message"
+            : `${shortcutKey} + Enter to send`
       }}</span>
       <UButton
         type="submit"
         :label="reply ? 'Reply' : 'Send message'"
-        icon="i-lucide-arrow-up"
+        icon="i-octicon-paper-airplane-16"
         :loading="pending"
         :disabled="disabled || !model.trim() || pending"
         size="sm"

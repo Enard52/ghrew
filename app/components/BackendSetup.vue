@@ -151,7 +151,7 @@ async function create() {
           <UButton
             type="submit"
             label="Review and create App on GitHub"
-            icon="i-lucide-github"
+            icon="i-octicon-mark-github-16"
             block
           />
         </form>
@@ -165,7 +165,7 @@ async function create() {
         </p>
         <UButton
           label="Continue with GitHub"
-          icon="i-lucide-github"
+          icon="i-octicon-mark-github-16"
           block
           :loading="auth.busy.value"
           @click="auth.signIn(true)"
@@ -183,7 +183,7 @@ async function create() {
           target="_blank"
           rel="noopener noreferrer"
           label="Install GitHub App"
-          icon="i-lucide-github"
+          icon="i-octicon-mark-github-16"
           variant="outline"
           block
         />

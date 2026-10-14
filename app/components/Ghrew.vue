@@ -129,6 +129,30 @@ const appError = ref("");
 const feed = useTemplateRef("feed");
 const { copy, copied } = useClipboard();
 const colorMode = useColorMode();
+const isMobile = useMediaQuery("(max-width: 760px)");
+const threadOverlay = useMediaQuery("(max-width: 1000px)");
+const globalSearch = useTemplateRef<HTMLElement>("globalSearch");
+const shortcutKey = computed(() =>
+  import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
+    ? "⌘"
+    : "Ctrl",
+);
+const roomChannels = computed(() =>
+  chat.channels.value.filter((c) => c.kind !== "dm"),
+);
+const directChannels = computed(() =>
+  chat.channels.value.filter((c) => c.kind === "dm"),
+);
+useEventListener(
+  import.meta.client ? window : undefined,
+  "keydown",
+  (event: KeyboardEvent) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      globalSearch.value?.querySelector("input")?.focus();
+    }
+  },
+);
 const {
   channels,
   channel,
@@ -149,7 +173,7 @@ const isSignedIn = computed(() =>
 const sample = computed(() => preview.value);
 const workspaceName = computed(() =>
   sample.value
-    ? "The shared kitchen"
+    ? "Ghrew demo"
     : isSignedIn.value
       ? organization.value
       : "Your workspace",
@@ -188,12 +212,12 @@ const conversationMenu = computed(() =>
     ? [
         {
           label: "Export preview channel",
-          icon: "i-lucide-download",
+          icon: "i-octicon-download-16",
           onSelect: exportPreview,
         },
         {
           label: "Host your own Ghrew",
-          icon: "i-lucide-sprout",
+          icon: "i-octicon-repo-template-16",
           onSelect: () => {
             ownOpen.value = true;
           },
@@ -202,24 +226,24 @@ const conversationMenu = computed(() =>
     : [
         {
           label: "Change workspace",
-          icon: "i-lucide-panels-top-left",
+          icon: "i-octicon-apps-16",
           onSelect: openWorkspaces,
         },
         {
           label: "Create workspace",
-          icon: "i-lucide-plus",
+          icon: "i-octicon-plus-16",
           onSelect: () => navigateTo("/create/"),
         },
         {
           label: "Projects and issues",
-          icon: "i-lucide-kanban",
+          icon: "i-octicon-project-16",
           onSelect: () => {
             projectsOpen.value = true;
           },
         },
         {
           label: "Host your own Ghrew",
-          icon: "i-lucide-sprout",
+          icon: "i-octicon-repo-template-16",
           onSelect: () => {
             ownOpen.value = true;
           },
@@ -365,18 +389,115 @@ function dayLabel(index: number) {
 </script>
 
 <template>
-  <div class="ghrew-shell" :class="{ 'has-thread': parent || threadPresent }">
+  <AuthModal
+    v-if="!sample && !isSignedIn"
+    standalone
+    v-model:open="authOpen"
+    :backend="auth.backend"
+    :busy="auth.busy.value"
+    :error="auth.error.value"
+    :request-url="auth.requestUrl.value"
+    :device-code="auth.deviceCode.value"
+    :mailbox-repository="auth.mailboxRepository.value"
+    @sign-in="auth.signIn()"
+    @mailbox="chooseMailbox"
+    @cancel="auth.cancelMailbox"
+    @preview="explore"
+  />
+  <div
+    v-else
+    class="ghrew-shell"
+    :class="{ 'has-thread': parent || threadPresent }"
+  >
+    <header class="app-toolbar" :inert="Boolean(parent) && isMobile">
+      <a :href="runtime.app.baseURL" class="brand" aria-label="Ghrew home"
+        ><BrandMark /><span>Ghrew</span></a
+      >
+      <div ref="globalSearch" class="global-search">
+        <UInput
+          v-model="search"
+          type="search"
+          icon="i-octicon-search-16"
+          placeholder="Search messages"
+          aria-label="Search messages"
+          class="w-full"
+          size="sm"
+        >
+          <template #trailing>
+            <UButton
+              v-if="search"
+              icon="i-octicon-x-16"
+              aria-label="Clear search"
+              color="neutral"
+              variant="link"
+              size="xs"
+              @click="search = ''"
+            />
+            <kbd v-else>{{ shortcutKey }} K</kbd>
+          </template>
+        </UInput>
+      </div>
+      <span v-if="sample" class="demo-badge">Demo</span>
+      <span v-else class="toolbar-workspace">{{ workspaceName }}</span>
+    </header>
+    <nav class="workspace-rail" aria-label="Workspaces">
+      <UTooltip
+        :text="workspaceName"
+        :delay-duration="300"
+        :content="{ side: 'right' }"
+      >
+        <button
+          class="workspace-badge"
+          :aria-label="`Open ${workspaceName} workspace`"
+          @click="openWorkspaces"
+        >
+          {{ sample ? "gh" : organization.slice(0, 2) }}
+        </button>
+      </UTooltip>
+      <UTooltip
+        text="Create a workspace"
+        :delay-duration="300"
+        :content="{ side: 'right' }"
+      >
+        <UButton
+          to="/create/"
+          icon="i-octicon-plus-16"
+          aria-label="Create a workspace"
+          color="neutral"
+          variant="ghost"
+        />
+      </UTooltip>
+      <div class="rail-bottom">
+        <UTooltip
+          text="About Ghrew"
+          :delay-duration="300"
+          :content="{ side: 'right' }"
+        >
+          <UButton
+            to="https://github.com/inchidev/ghrew"
+            target="_blank"
+            rel="noopener noreferrer"
+            icon="i-octicon-question-16"
+            aria-label="About Ghrew"
+            color="neutral"
+            variant="ghost"
+          />
+        </UTooltip>
+      </div>
+    </nav>
     <aside
       class="channel-sidebar"
       :class="{ 'is-open': channelsOpen }"
       aria-label="Workspace navigation"
+      :inert="(isMobile && !channelsOpen) || (Boolean(parent) && isMobile)"
     >
       <div class="sidebar-top">
-        <a :href="runtime.app.baseURL" class="brand" aria-label="Ghrew home"
-          ><BrandMark /><span>Ghrew</span></a
-        >
+        <button class="workspace-switch" @click="openWorkspaces">
+          <strong>{{ workspaceName }}</strong
+          ><UIcon name="i-octicon-chevron-down-16" />
+        </button>
         <UButton
-          icon="i-lucide-x"
+          icon="i-octicon-x-16"
           aria-label="Close channels"
           color="neutral"
           variant="ghost"
@@ -384,18 +505,12 @@ function dayLabel(index: number) {
           @click="channelsOpen = false"
         />
       </div>
-      <button class="workspace-switch" @click="openWorkspaces">
-        <span
-          ><strong>{{ workspaceName }}</strong
-          ><small>{{ sample ? "Local preview" : repository }}</small></span
-        >
-        <UIcon name="i-lucide-chevrons-up-down" />
-      </button>
       <div class="channel-heading">
-        <span>Conversations</span><span>{{ channels.length }}</span>
+        <span>Channels</span
+        ><span class="channel-count">{{ roomChannels.length }}</span>
         <UButton
           v-if="isSignedIn"
-          icon="i-lucide-plus"
+          icon="i-octicon-plus-16"
           aria-label="Start a conversation"
           size="xs"
           color="neutral"
@@ -405,9 +520,10 @@ function dayLabel(index: number) {
       </div>
       <nav class="channels" aria-label="Channels">
         <UButton
-          v-for="item in channels"
+          v-for="item in roomChannels"
           :key="item.id"
-          :label="`${item.kind === 'dm' ? '@' : item.kind === 'private' ? '🔒' : '#'} ${item.name}`"
+          :label="item.kind === 'private' ? item.name : `# ${item.name}`"
+          :icon="item.kind === 'private' ? 'i-octicon-lock-16' : undefined"
           color="neutral"
           variant="ghost"
           :class="{ active: selectedChannel === item.id }"
@@ -415,31 +531,45 @@ function dayLabel(index: number) {
           @click="selectedChannel = item.id"
         />
         <p v-if="!channels.length && !loading" class="sidebar-note">
-          No conversations yet. Start a Discussion in your repository.
+          No channels yet.
+        </p>
+      </nav>
+      <div class="channel-heading dm-heading"><span>Direct messages</span></div>
+      <nav class="channels" aria-label="Direct messages">
+        <UButton
+          v-for="item in directChannels"
+          :key="item.id"
+          :label="item.name"
+          icon="i-octicon-person-16"
+          color="neutral"
+          variant="ghost"
+          :class="{ active: selectedChannel === item.id }"
+          :aria-current="selectedChannel === item.id ? 'page' : undefined"
+          @click="selectedChannel = item.id"
+        />
+        <p v-if="!directChannels.length" class="sidebar-note">
+          No direct messages yet
         </p>
       </nav>
       <div class="sidebar-bottom">
         <button class="own-client" @click="ownOpen = true">
-          <UIcon name="i-lucide-sprout" /><span
-            ><strong>Make yourself at home</strong
-            ><small>Put Ghrew on your own GitHub</small></span
-          ><UIcon name="i-lucide-arrow-up-right" />
+          <UIcon name="i-octicon-repo-template-16" /><span
+            ><strong>Host your own</strong></span
+          ><UIcon name="i-octicon-link-external-16" />
         </button>
         <div class="user-bar">
           <span
-            ><strong>{{
-              auth.viewer.value?.login || "Just looking around"
-            }}</strong
+            ><strong>{{ auth.viewer.value?.login || "Demo" }}</strong
             ><small>{{
               isSignedIn
-                ? "Connected with GitHub"
+                ? "Your account"
                 : sample
-                  ? "Local preview"
+                  ? "Demo workspace"
                   : "Sign in to open your workspace"
             }}</small></span
           >
           <UButton
-            icon="i-lucide-sun-moon"
+            icon="i-octicon-sun-16"
             aria-label="Toggle color theme"
             color="neutral"
             variant="ghost"
@@ -450,7 +580,7 @@ function dayLabel(index: number) {
           />
           <UButton
             v-if="isSignedIn"
-            icon="i-lucide-log-out"
+            icon="i-octicon-sign-out-16"
             aria-label="Sign out"
             color="neutral"
             variant="ghost"
@@ -458,7 +588,7 @@ function dayLabel(index: number) {
           />
           <UButton
             v-else
-            icon="i-lucide-github"
+            icon="i-octicon-mark-github-16"
             aria-label="Sign in with GitHub"
             color="neutral"
             variant="ghost"
@@ -474,10 +604,10 @@ function dayLabel(index: number) {
       @click="channelsOpen = false"
     />
 
-    <main class="conversation">
+    <main class="conversation" :inert="Boolean(parent) && threadOverlay">
       <header class="conversation-header">
         <UButton
-          icon="i-lucide-menu"
+          icon="i-octicon-three-bars-16"
           aria-label="Open channels"
           color="neutral"
           variant="ghost"
@@ -485,15 +615,35 @@ function dayLabel(index: number) {
           @click="channelsOpen = true"
         />
         <div class="channel-title">
-          <h2><span>#</span> {{ channel?.name || "Your workspace" }}</h2>
-          <p>{{ channel?.description || "A place for the conversation" }}</p>
+          <h2>
+            <UIcon
+              v-if="channel?.kind === 'private'"
+              name="i-octicon-lock-16"
+              aria-hidden="true"
+            />
+            <UIcon
+              v-else-if="channel?.kind === 'dm'"
+              name="i-octicon-person-16"
+              aria-hidden="true"
+            />
+            <span v-else>#</span> {{ channel?.name || "Your workspace" }}
+          </h2>
+          <p>
+            {{
+              channel?.kind === "private"
+                ? "Private channel"
+                : channel?.kind === "dm"
+                  ? "Direct message"
+                  : channel?.description || ""
+            }}
+          </p>
         </div>
         <div class="header-actions">
           <UButton
             v-if="sample"
             label="Sign in"
             aria-label="Sign in with GitHub"
-            icon="i-lucide-github"
+            icon="i-octicon-mark-github-16"
             color="neutral"
             variant="outline"
             size="sm"
@@ -501,7 +651,7 @@ function dayLabel(index: number) {
           />
           <UButton
             v-else
-            icon="i-lucide-link"
+            icon="i-octicon-link-16"
             :aria-label="
               copied ? 'Workspace link copied' : 'Copy workspace link'
             "
@@ -514,87 +664,45 @@ function dayLabel(index: number) {
             :to="currentUrl"
             target="_blank"
             rel="noopener noreferrer"
-            icon="i-lucide-arrow-up-right"
+            icon="i-octicon-link-external-16"
             aria-label="Open channel in GitHub"
             color="neutral"
             variant="ghost"
           />
+          <UButton
+            v-if="!sample"
+            icon="i-octicon-sync-16"
+            aria-label="Refresh messages"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            :loading="chat.messagesQuery.isFetching.value"
+            :disabled="!online || chat.messagesQuery.isFetching.value"
+            @click="chat.refresh"
+          />
           <UDropdownMenu :items="conversationMenu"
             ><UButton
-              icon="i-lucide-ellipsis"
+              icon="i-octicon-kebab-horizontal-16"
               aria-label="Conversation options"
               color="neutral"
               variant="ghost"
           /></UDropdownMenu>
         </div>
       </header>
-      <div class="conversation-tools">
-        <UInput
-          v-model="search"
-          type="search"
-          icon="i-lucide-search"
-          placeholder="Search messages"
-          aria-label="Search messages"
-          size="sm"
-          class="search-input"
-        >
-          <template v-if="search" #trailing
-            ><UButton
-              icon="i-lucide-x"
-              aria-label="Clear search"
-              color="neutral"
-              variant="link"
-              size="xs"
-              @click="search = ''"
-          /></template>
-        </UInput>
-        <UButton
-          v-if="!sample"
-          icon="i-lucide-refresh-cw"
-          :label="
-            chat.messagesQuery.isFetching.value
-              ? 'Updating…'
-              : updatedAt
-                ? `Updated ${updatedAt}`
-                : 'Refresh'
-          "
-          aria-label="Refresh messages"
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          :disabled="!online || chat.messagesQuery.isFetching.value"
-          @click="chat.refresh"
-        />
-      </div>
       <div v-if="!online" class="notice offline-notice" role="status">
         You’re offline. Your draft is saved on this device.<span v-if="!sample">
           Send it when you reconnect.</span
         >
       </div>
       <div v-else-if="sample" class="notice preview-notice">
-        Local preview · sample conversations, saved in this browser.
-      </div>
-      <div
-        v-if="channel?.kind === 'private' || channel?.kind === 'dm'"
-        class="notice"
-        role="status"
-      >
-        {{
-          auth.backend
-            ? "Private vault · access checked by your Ghrew backend."
-            : "Private vault · updates wait for the GitHub Actions queue."
-        }}
+        Demo workspace. Changes stay in this browser.
       </div>
       <div
         v-if="chat.vaultChannelsQuery.isFetching.value"
-        class="notice"
+        class="sr-only"
         role="status"
       >
-        {{
-          auth.backend
-            ? "Checking private conversations…"
-            : "Checking private conversations through GitHub Actions…"
-        }}
+        Loading conversations…
       </div>
       <div v-if="appError" class="notice error-notice" role="alert">
         {{ appError }}
@@ -624,9 +732,8 @@ function dayLabel(index: number) {
         :aria-busy="loading"
       >
         <div v-if="loading" class="empty-state">
-          <UIcon name="i-lucide-loader-circle" class="animate-spin" />
-          <h3>Opening the conversation…</h3>
-          <p>Reading Discussions from GitHub.</p>
+          <UIcon name="i-octicon-sync-16" class="animate-spin" />
+          <h3>Loading messages…</h3>
         </div>
         <div v-else-if="!channels.length" class="empty-state">
           <BrandMark />
@@ -637,9 +744,7 @@ function dayLabel(index: number) {
                 : "Your team’s conversations stay behind sign-in."
             }}
           </h3>
-          <p>
-            Start a Discussion on GitHub and it will appear here as a channel.
-          </p>
+          <p>Create a channel to start talking with your team.</p>
           <UButton
             label="Open Discussions"
             :to="`https://github.com/${repository}/discussions`"
@@ -651,20 +756,18 @@ function dayLabel(index: number) {
         </div>
         <div v-else-if="!roots.length" class="empty-state">
           <UIcon
-            :name="search ? 'i-lucide-search' : 'i-lucide-messages-square'"
+            :name="
+              search ? 'i-octicon-search-16' : 'i-octicon-comment-discussion-16'
+            "
           />
           <h3>
-            {{
-              search
-                ? "No messages match your search."
-                : "This conversation starts with you."
-            }}
+            {{ search ? "No messages match your search." : "No messages yet." }}
           </h3>
           <p>
             {{
               search
                 ? "Try another word, or return to the conversation."
-                : "Write the first message below."
+                : "Send the first message."
             }}
           </p>
           <UButton
@@ -706,7 +809,7 @@ function dayLabel(index: number) {
             <p># {{ channel?.name }}</p>
           </div>
           <UButton
-            icon="i-lucide-x"
+            icon="i-octicon-x-16"
             aria-label="Close thread"
             color="neutral"
             variant="ghost"
@@ -744,7 +847,11 @@ function dayLabel(index: number) {
       </aside>
     </Transition>
     <AuthModal
-      :sandbox="auth.backend ? Boolean(auth.sandbox.value) : auth.mailboxRepository.value === 'ghrew-sandbox/ghrew-auth'"
+      :sandbox="
+        auth.backend
+          ? Boolean(auth.sandbox.value)
+          : auth.mailboxRepository.value === 'ghrew-sandbox/ghrew-auth'
+      "
       :backend="auth.backend"
       v-model:open="authOpen"
       :busy="auth.busy.value"

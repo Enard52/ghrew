@@ -107,3 +107,78 @@ Browser engines and emulated platform settings are not real-device, ClearType,
 screen-reader or production-performance proof. The filmstrip begins at the
 opening interaction; the separate before image supplies its pre-trigger state.
 The final optional polish shortens the phone search placeholder; not rescored.
+
+## GitHub / Slack redesign — round 1 (2026-10-14)
+
+One continuing independent critic reviewed light chat at 390/768/1280/1440,
+phone and desktop sign-in, dark chat, and the old screenshots. The explicit
+brief prioritizes GitHub fidelity over the skill's originality heuristics.
+
+| Criterion | Round 1 | Round 2 |
+| --- | ---: | ---: |
+| Concept on the page | 5 | 5 |
+| Not category average, within the brief | 4 | 4 |
+| Not a slop face | 4 | 4 |
+| First screen | 4 | 4 |
+| Typography | 4 | 4 |
+| Colour | 4 | 4 |
+| Richness | 4 | 4 |
+| Structure and rhythm | 3 | 4 |
+| Craft | 4 | 4 |
+| Responsive | 4 | 4 |
+| Everyone's computer | 3, provisional | 4 |
+| Signature | 3, provisional | 4 |
+| Screenshot test | 4 | 4 |
+| Fidelity to kept functionality | 3, provisional | 4 |
+
+Ten of thirteen visual criteria at 4+, with interaction/matrix proof still
+pending. Round 1 is not done by the stop rule.
+
+Five asks: replace repeated zero-reply text with an accessible icon affordance;
+remove the empty action row to compact transcript rhythm; remove “Bringing your
+team?”; bound message text to 85–95ch; supply thread, drawer, search and private
+conversation evidence. All accepted. Real reply counts stay visible; keyboard
+and touch thread creation stay available. The large empty area after a short
+conversation is deliberate and should not be filled with marketing.
+
+Exploration exceptions: all studies keep GitHub typography and Primer colours
+because those are the user's explicit requirements. No illustrative animation,
+stock people or decorative UI is added to satisfy a generic originality score.
+
+## GitHub / Slack redesign — round 2
+
+All five round-1 asks landed. The continuing critic scored Concept 5, all other
+13-line rubric criteria 4, and Fidelity 4. The stop rule is met. The filmstrip
+shows the selected source message and its matching thread; the phone drawer,
+full-screen thread, draft return, search and private-channel fixture were also
+reviewed. No new direction or additional round is requested.
+
+Final local evidence: `r2-final-chat/` has clean scans at 390/768/1280/1440 and
+19 visible, uncovered keyboard stops; `r2-final-dark/` is clean at 390/1440;
+`r2-auth/` is clean with six keyboard stops. Paths are under the ignored
+`artifacts/redesign/` directory. `r2-matrix-auth/` has twelve clean passes.
+`r2-matrix-chat/` plus `only-l10n+reflow/` cover twelve clean platform cases.
+The original 320px clipped topic was fixed; localization fixes shorten the
+sidebar host action and ellipsize topics. Rail tooltips open beside the rail
+so they cannot cover the next focused control.
+
+Expected signed-out HTTP401 responses appear in renderer diagnostics. They are
+not layout defects or authorization failures. The local visual server supplies
+configuration and a signed-out response, not a real authenticated backend.
+The private fixture capture checks UI only. Full tests separately verify
+private-channel access/logout isolation; no new second-account live claim or
+DM-specific screenshot is made.
+
+Fixed after the last round, not rescored: suppress the browser's duplicate
+search cancel glyph; use one Primer-blue input focus ring; show matching
+lock/person icons in private/DM headers. Targeted captures/scans verify them.
+
+All kept interactions remain covered by the existing regression suites. The
+six slop checks were applied within the explicit fidelity brief: the rail and
+conversation remain legible without branding; copy names actions; visual
+content is the product; the screen avoids template marketing and fake metrics;
+mobile preserves the working surface; restrained thread motion adds context.
+The familiar GitHub/Slack silhouette is intentional, not an originality claim.
+
+Physical devices, screen readers, real Windows glyph rendering and production
+performance have not been measured. The result uses system fonts deliberately.

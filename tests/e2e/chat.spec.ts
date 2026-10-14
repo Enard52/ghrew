@@ -13,15 +13,11 @@ test("local messages and per-room drafts survive reloads without claiming remote
       .filter({ hasText: "A message that stays on this device" }),
   ).toContainText("On this device");
   await composer.fill("Draft for general");
-  await expect(page.locator("#draft-status")).toHaveText(
-    "Draft saved on this device",
-  );
+  await expect(page.locator("#draft-status")).toHaveText("Draft saved");
   await page.getByRole("button", { name: "# building", exact: true }).click();
   await expect(composer).toHaveValue("");
   await composer.fill("Draft for building");
-  await expect(page.locator("#draft-status")).toHaveText(
-    "Draft saved on this device",
-  );
+  await expect(page.locator("#draft-status")).toHaveText("Draft saved");
   await page.reload();
   await expect(composer).toHaveValue("Draft for building");
   await page.getByRole("button", { name: "# general", exact: true }).click();
@@ -89,23 +85,29 @@ test("offline state keeps local writing available and search can recover from an
   ).toBeVisible();
 });
 
-test("entry opens a mini landing modal and an unavailable OAuth service fails closed", async ({
+test("entry is a dedicated sign-in page and an unavailable OAuth service fails closed", async ({
   page,
 }) => {
   await page.route("http://127.0.0.1:5180/config", (route) =>
     route.fulfill({ status: 503, body: "{}" }),
   );
   await page.goto("/");
-  await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
-    page.getByText("Your crew,", { exact: false }).first(),
+    page.getByRole("heading", { name: "Sign in to Ghrew", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".ghrew-shell")).toHaveCount(0);
+  await expect(
+    page.getByText("Your team’s conversations, in one place.", { exact: true }),
   ).toBeVisible();
   await expect(page.locator("input[type=password]")).toHaveCount(0);
   await page.getByRole("button", { name: "Continue with GitHub" }).click();
   await expect(page.getByRole("alert")).toContainText(
     "temporarily unavailable",
   );
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Ghrew", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".ghrew-shell")).toHaveCount(0);
 });
 
 test("phone room drawer and full-screen thread remain usable", async ({

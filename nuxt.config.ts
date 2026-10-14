@@ -31,7 +31,7 @@ export default defineNuxtConfig({
       fontshare: false,
     },
   },
-  colorMode: { preference: "dark", fallback: "dark" },
+  colorMode: { preference: "system", fallback: "light" },
   icon: { clientBundle: { scan: true }, provider: "none" },
   app: {
     baseURL: process.env.BASE_PATH || "/",

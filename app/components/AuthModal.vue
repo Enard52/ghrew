@@ -10,10 +10,10 @@ const props = defineProps<{
   dismissible?: boolean;
   sandbox?: boolean;
   backend?: boolean;
+  standalone?: boolean;
 }>();
-const mailbox = ref(props.mailboxRepository || "");
-const { copy, copied } = useClipboard();
 const open = defineModel<boolean>("open", { required: true });
+const colorMode = useColorMode();
 const emit = defineEmits<{
   signIn: [];
   preview: [];
@@ -21,167 +21,55 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 </script>
-
 <template>
+  <main v-if="standalone" class="auth-page">
+    <UButton
+      class="auth-theme"
+      icon="i-octicon-sun-16"
+      aria-label="Toggle color theme"
+      color="neutral"
+      variant="ghost"
+      @click="
+        colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+      "
+    />
+    <AuthContent
+      v-bind="props"
+      @sign-in="emit('signIn')"
+      @preview="emit('preview')"
+      @mailbox="emit('mailbox', $event)"
+      @cancel="emit('cancel')"
+    />
+    <footer class="auth-page-footer">
+      <a href="https://inchi.dev" target="_blank" rel="noopener noreferrer"
+        >Made by inchi</a
+      >
+      <a
+        href="https://github.com/inchidev/ghrew"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Source code</a
+      >
+    </footer>
+  </main>
   <UModal
+    v-else
     v-model:open="open"
     :dismissible="dismissible === true"
     :close="dismissible === true"
-    title="Your crew on GitHub."
-    description="A shared place to talk, backed by your GitHub Discussions."
-    :ui="{ content: 'auth-modal', header: 'auth-header', body: 'auth-body' }"
+    title="Sign in to Ghrew"
+    description="Your team’s conversations, in one place."
+    :ui="{ content: 'auth-modal' }"
   >
-    <template #title>
-      <span class="brand"><BrandMark /><span>Ghrew</span></span>
-      <span class="auth-headline">Your crew,<br />on GitHub.</span>
-    </template>
     <template #body>
-      <div class="auth-points">
-        <p>
-          <UIcon name="i-lucide-github" /><span
-            ><strong>Join with your GitHub account.</strong> Messages appear
-            under your GitHub name.</span
-          >
-        </p>
-        <p>
-          <UIcon name="i-lucide-lock-keyhole" /><span
-            ><strong>{{
-              sandbox ? "An open sandbox." : "Your team’s organization."
-            }}</strong>
-            {{
-              sandbox
-                ? "Try public channels, private groups and direct messages."
-                : "Public conversations and an administrator-owned private vault."
-            }}</span
-          >
-        </p>
-        <p>
-          <UIcon name="i-lucide-sprout" /><span
-            ><strong>Open source, yours to host.</strong> Start here. Move the
-            {{ backend ? 'whole app to your own Cloudflare account whenever you like.' : 'client to your own Pages whenever you like.' }}</span
-          >
-        </p>
-      </div>
-      <UAlert
-        v-if="error"
-        role="alert"
-        color="error"
-        variant="subtle"
-        title="Couldn’t sign in"
-        :description="error"
-        class="mb-4"
+      <AuthContent
+        v-bind="props"
+        compact
+        @sign-in="emit('signIn')"
+        @preview="emit('preview')"
+        @mailbox="emit('mailbox', $event)"
+        @cancel="emit('cancel')"
       />
-      <div v-if="requestUrl" class="space-y-4" role="status">
-        <template v-if="!deviceCode">
-          <p>
-            Submit the prepared sign-in issue on GitHub, then return here. Only
-            your GitHub username and sign-in time are public.
-          </p>
-          <UButton
-            :to="requestUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            label="Create sign-in request"
-            icon="i-lucide-github"
-            block
-          />
-          <p class="text-muted text-sm">
-            Waiting for your request and GitHub Actions…
-          </p>
-        </template>
-        <template v-else>
-          <p>
-            Enter this code on GitHub using the same account that created the
-            request.
-          </p>
-          <div class="flex items-center justify-between gap-3">
-            <strong class="text-2xl tracking-widest">{{ deviceCode }}</strong
-            ><UButton
-              :label="copied ? 'Copied' : 'Copy code'"
-              variant="outline"
-              @click="copy(deviceCode)"
-            />
-          </div>
-          <UButton
-            to="https://github.com/login/device"
-            target="_blank"
-            rel="noopener noreferrer"
-            label="Authorize on GitHub"
-            block
-          />
-          <p class="text-muted text-sm">Waiting for GitHub approval…</p>
-        </template>
-        <UButton
-          label="Cancel sign-in"
-          color="neutral"
-          variant="link"
-          @click="emit('cancel')"
-        />
-      </div>
-      <UButton
-        v-else
-        label="Continue with GitHub"
-        icon="i-lucide-github"
-        block
-        size="xl"
-        :loading="busy"
-        @click="emit('signIn')"
-      />
-      <p class="auth-permissions">
-        No separate password. No token to copy and paste.
-      </p>
-      <details v-if="!requestUrl && !backend" class="mb-4 text-sm">
-        <summary class="cursor-pointer text-muted">
-          Use your organization’s Ghrew
-        </summary>
-        <div class="mt-3 space-y-3">
-          <UFormField
-            label="Authentication repository"
-            description="Your team’s public GitHub sign-in mailbox."
-            ><UInput
-              v-model="mailbox"
-              placeholder="your-org/ghrew-auth"
-              class="w-full"
-          /></UFormField>
-          <UButton
-            label="Connect team sign-in"
-            variant="outline"
-            :disabled="!mailbox"
-            @click="emit('mailbox', mailbox.trim())"
-          />
-        </div>
-      </details>
-      <p v-if="sandbox" class="text-muted text-sm">
-        Anyone with GitHub can join. Sandbox administrators can read private
-        conversations.
-      </p>
-      <UButton
-        v-if="!hideCreate"
-        to="/create/"
-        label="Create your own workspace"
-        variant="outline"
-        block
-        class="mt-4"
-      />
-      <div class="auth-footer">
-        <UButton
-          label="Explore the local preview"
-          color="neutral"
-          variant="link"
-          size="sm"
-          @click="emit('preview')"
-        />
-        <UButton
-          label="Source code"
-          to="https://github.com/inchidev/ghrew"
-          target="_blank"
-          rel="noopener noreferrer"
-          color="neutral"
-          variant="link"
-          size="sm"
-          trailing-icon="i-lucide-arrow-up-right"
-        />
-      </div>
     </template>
   </UModal>
 </template>

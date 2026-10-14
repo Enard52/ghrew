@@ -280,14 +280,12 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
   });
   approved = true;
   await expect(
-    page.getByRole("button", { name: "🔒 Leadership", exact: true }),
+    page.getByRole("button", { name: "Leadership", exact: true }),
   ).toBeVisible({ timeout: 30_000 });
   await expect(
-    page.getByRole("button", { name: "acme acme/ghrew-chat", exact: true }),
+    page.getByRole("button", { name: "acme", exact: true }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "🔒 Leadership", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Leadership", exact: true }).click();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(composer).toBeEnabled();
   await composer.fill("Confidential strategy for the next launch");

@@ -164,7 +164,7 @@ test("GitHub OAuth completes with PKCE, sends directly to Discussions, and clear
     page
       .locator(".message")
       .filter({ hasText: "Sent under my GitHub identity" }),
-  ).toContainText("Saved to GitHub");
+  ).toContainText("Sent");
   await expect(composer).toHaveValue("");
   expect(
     requests
@@ -175,7 +175,10 @@ test("GitHub OAuth completes with PKCE, sends directly to Discussions, and clear
     "test-browser-session",
   );
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to Ghrew", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".ghrew-shell")).toHaveCount(0);
   expect(
     await page.evaluate(() =>
       sessionStorage.getItem("ghrew:github-session:v1"),
@@ -224,7 +227,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
   ).toBeVisible();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Draft for the public workspace");
-  await page.getByRole("button", { name: /inchidev inchidev\/ghrew/ }).click();
+  await page.locator(".workspace-switch").click();
   await page
     .getByRole("button", { name: "my-team/private-chat", exact: true })
     .click();
@@ -236,9 +239,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
   ).toHaveCount(0);
   await expect(composer).toHaveValue("");
   await composer.fill("Draft for the private workspace");
-  await page
-    .getByRole("button", { name: /my-team my-team\/private-chat/ })
-    .click();
+  await page.locator(".workspace-switch").click();
   await page
     .getByRole("button", { name: "inchidev/ghrew", exact: true })
     .click();

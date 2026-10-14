@@ -30,7 +30,7 @@ const open = defineModel<boolean>("open", { required: true });
         </p>
         <UButton
           label="Deploy to Cloudflare"
-          icon="i-lucide-cloud"
+          icon="i-octicon-cloud-16"
           to="https://deploy.workers.cloudflare.com/?url=https://github.com/inchidev/ghrew"
           target="_blank"
           rel="noopener noreferrer"
@@ -42,7 +42,7 @@ const open = defineModel<boolean>("open", { required: true });
           rel="noopener noreferrer"
           color="neutral"
           variant="link"
-          trailing-icon="i-lucide-arrow-up-right"
+          trailing-icon="i-octicon-link-external-16"
         />
       </div>
     </template>

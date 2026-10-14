@@ -1,86 +1,53 @@
-# Ghrew direction
+# Ghrew: Slack structure, GitHub UI
 
-## Brief (self-authored from the implementation request)
+## Brief and constraints
 
-A public, MIT-licensed experiment for a small team. Everyone signs in with
-their own GitHub account. The shared static client opens into the chat shell;
-a welcome modal explains Ghrew and offers GitHub sign-in. Conversations live
-in GitHub Discussions, and a separate OAuth-only handler exchanges login codes.
-The sidebar offers connecting another repository and hosting a team-owned copy.
-The implementation uses Nuxt 4, Nuxt UI, Tailwind, VueUse, Vue Query, Zod and
-Day.js. RxDB is deferred until a persistent offline mirror/outbox is needed.
+User-authored brief, 2026-10-14: make Ghrew work visually like Slack, using GitHub's visual language exactly. Replace the obsolete wok logo with a newly generated identity. Never show the empty chat behind a login dialog. Keep implementation details out of normal conversation and sign-in screens.
 
-Feel: companionable, focused, handmade. The name suggests a wok: a shared
-place where contributions come together. No photographs or generated assets
-are needed. The conversation itself is the visual evidence.
+Keep: GitHub sign-in, workspace switching, public/private conversations and DMs, drafts, search, threads, mobile navigation, accessible error states, self-hosting entry, theme switching. Replace: warm palette, Be Vietnam Pro, large marketing modal, technical notices, oversized navigation, decorative wok.
 
-## Three explorations
+## Exploration and choice
 
-A. Iron kitchen: a dark enamel work surface, warm copper action, Be Vietnam
-Pro, split conversation shell. Richness comes from a complete readable
-conversation; incoming messages settle into a shared timeline.
+Three rendered first-screen studies are in `docs/design/github/` and ignored evidence in `artifacts/redesign/explore-*`:
+A: one sidebar, light. Familiar but loses the workspace/conversation distinction.
+B: workspace rail + channel sidebar, dark. Selected; closest to Slack's mental model without copying Slack's palette.
+C: repository-style top tabs, light. Rejected; spends vertical room on navigation and feels like repository administration.
 
-B. Porcelain notebook: a white page, teal action, Georgia-led message text,
-topbar shell. Richness comes from line-art branches tying replies together;
-the reply connector draws when a thread is opened.
+All studies deliberately use GitHub system typography, green primary actions, blue selection and Primer neutrals. The requested exact GitHub visual vocabulary overrides the skill's default requirement to explore unrelated typefaces, accent hues and expressive motion. Both light and dark ship. The category clone is intentional, not an originality claim.
 
-C. Radio commons: a blue colour field, yellow action, condensed headings,
-inbox shell. Richness comes from physical channel tiles, which slide to
-reveal the active conversation.
+## Tokens and shell
 
-Explorations live in docs/design/explore. All three were rendered at phone
-and desktop sizes. A was selected: it makes an all-day conversation feel
-companionable while retaining readable small text. B was too document-like
-for an ongoing room; C's saturated field competed with longer messages.
+Use official `@primer/primitives` light/dark theme variables and `@iconify-json/octicon`. Keep Nuxt UI and map its semantic variables to Primer. System font stack follows GitHub and the user's OS. 12px metadata, 14px body, 16px section headings, 24px sign-in title. Spacing 4/8/12/16/24/32. Controls 6px radius; dialogs 12px; app panels use hairlines.
 
-## Refused category defaults
+Desktop: 56px top toolbar, 56px workspace rail, 232px channels, flexible conversation, optional 360px thread. Channel rows 32px. Search is global and supports Cmd/Ctrl+K. On phone: 48px toolbar, channel drawer, full-screen thread; the composer stays reachable above safe areas.
 
-No KPI dashboard, avatar-initial circles, gradient AI branding, decorative
-status lights or nested cards. A channel rail is justified by conversations,
-not by a dashboard template. Names are readable text. Preview content is
-explicitly marked as sample content and never presented as live GitHub data.
+Richness comes from real conversation content, not fake dashboards or decorative imagery. Preview is explicitly labeled Demo. Generated near-black conversation-bubble g mark is used as a monochrome alpha mask; no old wok assets remain in the rendered app.
 
-## Proposed tokens and interaction
+Signature: opening a thread keeps the source message marked and reveals the matching reply pane in 160ms. Reduced motion is immediate. No ambient decoration: fidelity to GitHub wins over the skill's illustrative animation defaults.
 
-The iron direction uses a deep green-grey enamel ground (#202827), slightly
-lighter rails (#28312f), clear neutral text (#f1f2ec), muted readable text
-(#b6c0b9), and copper (#f1a36e) only for the selected channel and primary action.
-Be Vietnam Pro has a friendly but compact reading rhythm and supports both
-English and Vietnamese. Six sizes: 12, 13, 14, 16, 22, 36px. Spacing: 4, 8,
-12, 16, 24, 32, 48px. Controls have 8px radii; dialogs have 16px radii.
+## Content
 
-The phone is a full writing client. Channels become a drawer and threads
-become a sheet. A saved draft survives channel switches and reloads.
-Signature: opening a thread picks out the source message with a copper rail
-and settles a matching reply panel beside the room over 160ms. The room draft
-remains intact. On phone the thread becomes a full-screen sheet with an
-explicit return to its room. Reduced motion shows the final state immediately.
-Saved marks are reserved for actual remote acknowledgement. The sample room
-has a permanent local-preview notice and no fabricated GitHub delivery.
+Entry: Ghrew; Sign in to Ghrew; Your team’s conversations, in one place.; Continue with GitHub; Try a demo; Create your own workspace. Footer: Made by inchi; Source code. No shell under entry. Loading: Connecting to your workspace….
 
-Light mode uses a cool pale green ground, white surfaces and a darker copper
-action. The same font and geometry apply. Controls have explicit forced-colour
-borders, and user-generated content is rendered as text.
+Shell: workspace name; Channels; Direct messages; New conversation; account name; Sign out. Repository paths belong in the workspace connection/admin flow, not the channel rail.
 
-Voice: brief and specific, like a helpful teammate.
+Channel: name and its actual topic; Search messages; Refresh messages. Empty: No messages yet. / Send the first message. Loading: Loading messages… . Offline: You’re offline. Your draft is saved. Demo: Demo workspace. Changes stay in this browser. Private access belongs in participant/settings disclosures; no vault/backend/Actions notices in chat.
 
-## Content and states
+Message: author, time, body, reply count. Remote delivery is represented by an accessible Sent status and a quiet check; local demo delivery remains honestly labeled On this device. External source action is available but secondary.
 
-Entry: Ghrew; “Your team, in conversation.”; “A shared place to talk, backed
-by your GitHub Discussions.”; “Join with your GitHub account.”; “Your team’s
-repository.”; “Open source, yours to host.”; “Continue with GitHub”; “Explore
-the local preview”; “Source code”. No separate password or manual token field.
-Sidebar: “The shared kitchen” in preview; repository name in live workspaces;
-“Your workspaces”; “Conversations”; “Make yourself at home”; “Put Ghrew on
-your own GitHub”; account name; “Connected with GitHub”.
-Hosting modal: “A Ghrew of your own”; client template, separate private chat
-repository, own GitHub App and OAuth handler, reviewed updates.
-Chat: #general; “The room for everyday things”; search messages; channel
-list; “Write a message…”; “Send message”; “Reply in thread”; “Open in GitHub”.
-Empty: “This conversation starts with you.” / “Write the first message”.
-Filtered: “No messages match your search.” / “Clear search”.
-Offline: “You’re offline. Your draft and local history are still here.”
-Pending: “Waiting to send”. Error: “Couldn’t save to GitHub. Your message is
-still on this device.” / “Retry”. Locked: “Open this workspace to read its
-conversations.” Permission: explain the workspace’s actual access model.
-Admin: repository connection, channels, member access and export.
+Composer: Write a message…; Send message; Draft saved; Cmd/Ctrl + Enter to send. Error retains the draft. Thread: Thread; channel name; Reply; Close thread.
+
+Admin setup retains required organization, deployment-key, permissions and access explanations. Those details answer an actual administration decision and are not shown in normal sign-in/chat.
+
+## Sources
+
+GitHub Primer foundations: https://primer.style/product/getting-started/foundations/
+Official color tokens: https://primer.style/product/primitives/color/
+Generated logo prompt and asset provenance: `docs/design/github/logo.md`.
+
+History exception: `app|object|light|grotesque|green|data|sidebar` differs from
+this same project's earlier GitWok iteration on three look columns. Preserve
+system typography, real conversation content and the familiar sidebar because
+the user explicitly requested an exact GitHub visual language over Slack
+structure. This is an intentional redesign of the same product, not a reused
+look for an unrelated client.

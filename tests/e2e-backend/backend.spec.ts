@@ -70,9 +70,7 @@ test("a fresh deployment guides App registration without an issue mailbox or man
   );
   await page.goto("/?preview=1");
   await expect(
-    page.getByText(
-      "Local preview · sample conversations, saved in this browser.",
-    ),
+    page.getByText("Demo workspace. Changes stay in this browser."),
   ).toBeVisible();
 });
 
@@ -273,4 +271,50 @@ test("cookie sessions route public and private reads through the backend and sig
     page.getByText("Only permitted participants can see this."),
   ).toHaveCount(0);
   expect(signedOut).toBe(true);
+});
+
+test("signed-out entry has no hidden chat shell at phone, tablet and desktop widths", async ({
+  page,
+}) => {
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/config")
+      return route.fulfill({
+        json: { configured: true, setupAvailable: true, app, sandbox: "team" },
+      });
+    if (path === "/api/session")
+      return route.fulfill({ status: 401, json: { error: "Signed out" } });
+    throw new Error(
+      "Signed-out entry attempted a conversation request: " + path,
+    );
+  });
+  for (const width of [390, 712, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await expect(
+      page.getByRole("button", { name: "Continue with GitHub" }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Ghrew", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".ghrew-shell")).toHaveCount(0);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(
+      page.getByRole("textbox", { name: "Message", exact: true }),
+    ).toHaveCount(0);
+    const copy = await page.locator("main").innerText();
+    expect(copy).not.toMatch(
+      /vault|Cloudflare|backend|Actions|repository|token/i,
+    );
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > innerWidth,
+      ),
+    ).toBe(false);
+  }
+  await page.getByRole("button", { name: "Try a demo" }).click();
+  await expect(page.locator(".ghrew-shell")).toBeVisible();
+  await expect(
+    page.getByText("Demo workspace. Changes stay in this browser."),
+  ).toBeVisible();
 });
