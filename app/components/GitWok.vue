@@ -5,6 +5,10 @@ import { useGitHubAuth } from "~/composables/useGitHubAuth";
 import { useChat } from "~/composables/useChat";
 import { GitHubError, parseRepository } from "~/lib/github";
 import { safeUrl } from "~/lib/links";
+import { useQuery } from "@tanstack/vue-query";
+import { listWorkspaceRepositories } from "~/lib/github";
+import type { Channel } from "../../shared/chat";
+import type { MailboxConfig } from "../../shared/mailbox";
 
 const runtime = useRuntimeConfig();
 const auth = useGitHubAuth();
@@ -17,10 +21,19 @@ const savedRepositories = useLocalStorage<Record<string, string>>(
   {},
 );
 const repository = computed({
-  get: () =>
-    savedRepositories.value[login.value] ||
-    runtime.public.defaultRepository ||
-    "inchidev/gitwok",
+  get: () => {
+    const selected =
+      savedRepositories.value[login.value] ||
+      runtime.public.defaultRepository ||
+      "inchidev/gitwok";
+    const owner = selected.split("/")[0]!;
+    const mailboxOwner = auth.activeMailbox.value?.repository.split("/")[0];
+    // Managed workspaces use a canonical public repository even after a legacy saved preference.
+    return auth.activeMailbox.value?.vault &&
+      mailboxOwner?.toLowerCase() === owner.toLowerCase()
+      ? `${owner}/gitwok-chat`
+      : selected;
+  },
   set: (value) => {
     savedRepositories.value = {
       ...savedRepositories.value,
@@ -28,10 +41,92 @@ const repository = computed({
     };
   },
 });
-const chat = useChat(auth.token, login, preview, repository);
+const organization = computed(() => repository.value.split("/")[0]!);
+const repositoriesQuery = useQuery({
+  queryKey: computed(() => ["workspace-sources", login.value]),
+  enabled: computed(() =>
+    Boolean(auth.token.value && login.value && !preview.value),
+  ),
+  queryFn: ({ signal }) => listWorkspaceRepositories(auth.token.value, signal),
+  staleTime: 30_000,
+});
+const sources = computed(() => {
+  const all = (repositoriesQuery.data.value || [])
+    .filter(
+      (r) =>
+        r.has_discussions &&
+        (!auth.activeMailbox.value?.vault || !r.private) &&
+        r.full_name
+          .toLowerCase()
+          .startsWith(organization.value.toLowerCase() + "/") &&
+        !["gitwok-vault", "gitwok-auth"].includes(r.full_name.split("/")[1]!),
+    )
+    .map((r) => r.full_name);
+  return [
+    ...new Set(
+      auth.activeMailbox.value?.vault ? all : [...all, repository.value],
+    ),
+  ].filter(
+    (value) =>
+      !value.endsWith("/gitwok-vault") && !value.endsWith("/gitwok-auth"),
+  );
+});
+const vaultMailbox = computed(() =>
+  auth.activeMailbox.value?.vault &&
+  auth.activeMailbox.value.repository.split("/")[0]!.toLowerCase() ===
+    organization.value.toLowerCase()
+    ? auth.activeMailbox.value
+    : null,
+);
+const chat = useChat(
+  auth.token,
+  login,
+  preview,
+  repository,
+  sources,
+  vaultMailbox,
+);
 const authOpen = ref(false);
 const workspaceOpen = ref(false);
 const ownOpen = ref(false);
+const setupOpen = ref(false);
+const conversationOpen = ref(false);
+const projectsOpen = ref(false);
+const creatorUrl = computed(() =>
+  auth.activeMailbox.value?.creatorAppSlug
+    ? `https://github.com/apps/${auth.activeMailbox.value.creatorAppSlug}/installations/new`
+    : undefined,
+);
+async function installerSignIn() {
+  setupOpen.value = false;
+  authOpen.value = true;
+  await auth.signIn(true);
+}
+async function chooseMailbox(value: string) {
+  try {
+    await auth.selectMailbox(value);
+    const url = new URL(window.location.href);
+    url.searchParams.set("auth", value);
+    history.replaceState(null, "", url);
+    authOpen.value = true;
+  } catch (e) {
+    auth.error.value =
+      e instanceof Error ? e.message : "Could not connect team sign-in.";
+  }
+}
+async function ownWorkspace(config: MailboxConfig) {
+  await chooseMailbox(config.repository);
+  await connect(`${config.repository.split("/")[0]}/gitwok-chat`);
+}
+async function conversationCreated(channel?: Channel) {
+  if (channel) {
+    await chat.vaultChannelsQuery.refetch();
+    chat.selectedChannel.value = channel.id;
+  } else await chat.channelsQuery.refetch();
+}
+watch(auth.installer, (value) => {
+  if (value) setupOpen.value = true;
+});
 const channelsOpen = ref(false);
 const appError = ref("");
 const feed = useTemplateRef("feed");
@@ -54,17 +149,25 @@ const {
 const isSignedIn = computed(() =>
   Boolean(auth.viewer.value && auth.token.value),
 );
-const sample = computed(() => preview.value || !isSignedIn.value);
+const sample = computed(() => preview.value);
 const workspaceName = computed(() =>
-  sample.value ? "The shared kitchen" : repository.value.split("/").at(-1),
+  sample.value
+    ? "The shared kitchen"
+    : isSignedIn.value
+      ? organization.value
+      : "Your workspace",
 );
 const queryError = computed(
-  () => chat.channelsQuery.error.value || chat.messagesQuery.error.value,
+  () =>
+    chat.channelsQuery.error.value ||
+    chat.messagesQuery.error.value ||
+    chat.vaultChannelsQuery.error.value,
 );
 const sendError = computed(() => chat.sendMutation.error.value?.message || "");
 const isPending = chat.sendMutation.isPending;
 const loading = computed(
   () =>
+    isSignedIn.value &&
     !sample.value &&
     (chat.channelsQuery.isPending.value ||
       (Boolean(channel.value) && chat.messagesQuery.isPending.value)),
@@ -106,6 +209,20 @@ const conversationMenu = computed(() =>
           onSelect: openWorkspaces,
         },
         {
+          label: "Create workspace",
+          icon: "i-lucide-plus",
+          onSelect: () => {
+            setupOpen.value = true;
+          },
+        },
+        {
+          label: "Projects and issues",
+          icon: "i-lucide-kanban",
+          onSelect: () => {
+            projectsOpen.value = true;
+          },
+        },
+        {
           label: "Host your own GitWok",
           icon: "i-lucide-sprout",
           onSelect: () => {
@@ -116,9 +233,9 @@ const conversationMenu = computed(() =>
 );
 
 watch(
-  [auth.busy, isSignedIn],
-  ([busy, signedIn]) => {
-    if (!busy) authOpen.value = !signedIn && !preview.value;
+  [auth.busy, isSignedIn, auth.mailboxWaiting],
+  ([busy, signedIn, waiting]) => {
+    if (!busy) authOpen.value = waiting || (!signedIn && !preview.value);
     if (signedIn) {
       preview.value = false;
       const incoming = new URL(window.location.href).searchParams.get(
@@ -171,13 +288,29 @@ function openWorkspaces() {
   if (isSignedIn.value) workspaceOpen.value = true;
   else authOpen.value = true;
 }
-function connect(value: string) {
+async function connect(value: string) {
+  const owner = parseRepository(value)[0];
+  if (
+    auth.activeMailbox.value?.vault &&
+    owner.toLowerCase() !==
+      auth.activeMailbox.value.repository.split("/")[0]!.toLowerCase()
+  ) {
+    try {
+      await auth.selectMailbox(`${owner}/gitwok-auth`);
+    } catch {
+      appError.value =
+        "Connect this organization’s gitwok-auth before opening its workspace.";
+      return;
+    }
+  }
   repository.value = value;
   preview.value = false;
   appError.value = "";
   const url = new URL(window.location.href);
   url.searchParams.delete("preview");
   url.searchParams.set("workspace", value);
+  if (auth.activeMailbox.value)
+    url.searchParams.set("auth", auth.activeMailbox.value.repository);
   history.replaceState(null, "", url);
 }
 async function installApp() {
@@ -200,6 +333,8 @@ function signOut() {
 function shareWorkspace() {
   const url = new URL(`${window.location.origin}${runtime.app.baseURL}`);
   url.searchParams.set("workspace", repository.value);
+  if (auth.activeMailbox.value)
+    url.searchParams.set("auth", auth.activeMailbox.value.repository);
   void copy(url.href);
 }
 function exportPreview() {
@@ -263,12 +398,21 @@ function dayLabel(index: number) {
       </button>
       <div class="channel-heading">
         <span>Conversations</span><span>{{ channels.length }}</span>
+        <UButton
+          v-if="isSignedIn"
+          icon="i-lucide-plus"
+          aria-label="Start a conversation"
+          size="xs"
+          color="neutral"
+          variant="ghost"
+          @click="conversationOpen = true"
+        />
       </div>
       <nav class="channels" aria-label="Channels">
         <UButton
           v-for="item in channels"
           :key="item.id"
-          :label="`# ${item.name}`"
+          :label="`${item.kind === 'dm' ? '@' : item.kind === 'private' ? '🔒' : '#'} ${item.name}`"
           color="neutral"
           variant="ghost"
           :class="{ active: selectedChannel === item.id }"
@@ -292,7 +436,11 @@ function dayLabel(index: number) {
               auth.viewer.value?.login || "Just looking around"
             }}</strong
             ><small>{{
-              isSignedIn ? "Connected with GitHub" : "Sample conversations"
+              isSignedIn
+                ? "Connected with GitHub"
+                : sample
+                  ? "Local preview"
+                  : "Sign in to open your workspace"
             }}</small></span
           >
           <UButton
@@ -431,6 +579,20 @@ function dayLabel(index: number) {
       <div v-else-if="sample" class="notice preview-notice">
         Local preview · sample conversations, saved in this browser.
       </div>
+      <div
+        v-if="channel?.kind === 'private' || channel?.kind === 'dm'"
+        class="notice"
+        role="status"
+      >
+        Private vault · updates wait for the GitHub Actions queue.
+      </div>
+      <div
+        v-if="chat.vaultChannelsQuery.isFetching.value"
+        class="notice"
+        role="status"
+      >
+        Checking private conversations through GitHub Actions…
+      </div>
       <div v-if="appError" class="notice error-notice" role="alert">
         {{ appError }}
       </div>
@@ -465,7 +627,13 @@ function dayLabel(index: number) {
         </div>
         <div v-else-if="!channels.length" class="empty-state">
           <BrandMark />
-          <h3>This workspace is ready for a conversation.</h3>
+          <h3>
+            {{
+              isSignedIn
+                ? "This workspace is ready for a conversation."
+                : "Your team’s conversations stay behind sign-in."
+            }}
+          </h3>
           <p>
             Start a Discussion on GitHub and it will appear here as a channel.
           </p>
@@ -576,7 +744,13 @@ function dayLabel(index: number) {
       v-model:open="authOpen"
       :busy="auth.busy.value"
       :error="auth.error.value"
-      @sign-in="auth.signIn"
+      :request-url="auth.requestUrl.value"
+      :device-code="auth.deviceCode.value"
+      :waiting="auth.mailboxWaiting.value"
+      :mailbox-repository="auth.mailboxRepository.value"
+      @sign-in="auth.signIn()"
+      @mailbox="chooseMailbox"
+      @cancel="auth.cancelMailbox"
       @preview="explore"
     />
     <WorkspaceModal
@@ -584,9 +758,35 @@ function dayLabel(index: number) {
       :token="auth.token.value"
       :login="login"
       :repository="repository"
+      :public-only="Boolean(auth.activeMailbox.value?.vault)"
       @connect="connect"
       @install="installApp"
+      @create="setupOpen = true"
     />
     <OwnClientModal v-model:open="ownOpen" />
+    <SetupModal
+      v-model:open="setupOpen"
+      :token="auth.token.value"
+      :login="login"
+      :user-id="auth.viewer.value?.id || 0"
+      :installer="auth.installer.value"
+      :creator-url="creatorUrl"
+      @authorize="installerSignIn"
+      @ready="ownWorkspace"
+    />
+    <ConversationModal
+      v-model:open="conversationOpen"
+      :token="auth.token.value"
+      :user-id="auth.viewer.value?.id || 0"
+      :repository="repository"
+      :mailbox="vaultMailbox"
+      @created="conversationCreated"
+    />
+    <ProjectsModal
+      v-model:open="projectsOpen"
+      :token="auth.token.value"
+      :organization="organization"
+      :repositories="sources"
+    />
   </div>
 </template>

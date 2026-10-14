@@ -7,9 +7,14 @@ const props = defineProps<{
   token: string;
   login: string;
   repository: string;
+  publicOnly?: boolean;
 }>();
 const open = defineModel<boolean>("open", { required: true });
-const emit = defineEmits<{ connect: [repository: string]; install: [] }>();
+const emit = defineEmits<{
+  connect: [repository: string];
+  install: [];
+  create: [];
+}>();
 const state = reactive({ repository: props.repository });
 const schema = z.object({
   repository: z.string().refine((value) => {
@@ -27,6 +32,30 @@ const repos = useQuery({
   queryFn: ({ signal }) => listWorkspaceRepositories(props.token, signal),
   staleTime: 30_000,
 });
+const visibleRepositories = computed(() =>
+  (repos.data.value || []).filter(
+    (repo) =>
+      !["gitwok-vault", "gitwok-auth"].includes(
+        repo.full_name.split("/")[1]!,
+      ) &&
+      (!props.publicOnly || !repo.private),
+  ),
+);
+const organizations = computed(() => [
+  ...new Set(
+    visibleRepositories.value.map((repo) => repo.full_name.split("/")[0]!),
+  ),
+]);
+function connectOrganization(owner: string) {
+  const values = visibleRepositories.value.filter((repo) =>
+    repo.full_name.startsWith(owner + "/"),
+  );
+  const primary =
+    values.find((repo) => repo.full_name === `${owner}/gitwok-chat`) ||
+    values.find((repo) => repo.has_discussions) ||
+    values[0];
+  if (primary) connect(primary.full_name);
+}
 watch(open, (value) => {
   if (value) state.repository = props.repository;
 });
@@ -40,10 +69,20 @@ function connect(value: string) {
   <UModal
     v-model:open="open"
     title="Your workspaces"
-    description="Each workspace is a GitHub repository with Discussions enabled."
+    description="An organization brings its connected repositories and conversations together."
   >
     <template #body>
       <div class="workspace-list">
+        <UButton
+          v-for="owner in organizations"
+          :key="owner"
+          :label="`Organization: ${owner}`"
+          icon="i-lucide-building-2"
+          color="neutral"
+          variant="outline"
+          block
+          @click="connectOrganization(owner)"
+        />
         <p
           v-if="repos.isPending.value && props.token"
           class="text-muted text-sm"
@@ -59,7 +98,7 @@ function connect(value: string) {
           :description="repos.error.value.message"
         />
         <UButton
-          v-for="repo in repos.data.value"
+          v-for="repo in visibleRepositories"
           :key="repo.id"
           color="neutral"
           variant="ghost"
@@ -103,13 +142,23 @@ function connect(value: string) {
       </div>
       <div class="workspace-setup">
         <h3>Start a workspace</h3>
+        <UButton
+          label="Create organization workspace"
+          icon="i-lucide-plus"
+          class="my-3"
+          @click="
+            open = false;
+            emit('create');
+          "
+        />
         <p>
-          Create a private repository, enable Discussions, and invite your team
-          on GitHub. Install the GitWok App on that repository, then open it
-          here.
+          Create a workspace with public channels, one administrator-only
+          gitwok-vault for private channels and DMs, and your own sign-in
+          workflow.
         </p>
         <div class="flex flex-wrap gap-2 mt-3">
           <UButton
+            v-if="!publicOnly"
             label="Create repository"
             to="https://github.com/new?name=chat&visibility=private"
             target="_blank"

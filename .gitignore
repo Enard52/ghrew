@@ -14,4 +14,7 @@ artifacts/
 playwright-report/
 test-results/
 *.local
+public/bootstrap/auth-bundle.json
 .DS_Store
+
+.gitwok-setup/

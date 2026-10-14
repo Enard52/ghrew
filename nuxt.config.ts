@@ -1,4 +1,17 @@
 import process from "node:process";
+import { existsSync, readFileSync } from "node:fs";
+import { z } from "zod";
+
+// Public configuration for independent template copies. No credentials belong here.
+const clientConfig = existsSync("gitwok-client.json")
+  ? z
+      .object({
+        version: z.literal(1),
+        authRepository: z.string().regex(/^[\w-]+\/gitwok-auth$/),
+        defaultRepository: z.string().regex(/^[\w-]+\/[\w.-]+$/),
+      })
+      .parse(JSON.parse(readFileSync("gitwok-client.json", "utf8")))
+  : null;
 
 export default defineNuxtConfig({
   compatibilityDate: "2026-10-14",
@@ -45,7 +58,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       oauthBrokerUrl: "",
-      defaultRepository: "",
+      defaultRepository: clientConfig?.defaultRepository || "",
+      authRepository: clientConfig?.authRepository || "",
     },
   },
   typescript: { strict: true },

@@ -1,7 +1,21 @@
 <script setup lang="ts">
-defineProps<{ busy: boolean; error: string }>();
+const props = defineProps<{
+  busy: boolean;
+  error: string;
+  requestUrl?: string;
+  deviceCode?: string;
+  waiting?: boolean;
+  mailboxRepository?: string;
+}>();
+const mailbox = ref(props.mailboxRepository || "");
+const { copy, copied } = useClipboard();
 const open = defineModel<boolean>("open", { required: true });
-const emit = defineEmits<{ signIn: []; preview: [] }>();
+const emit = defineEmits<{
+  signIn: [];
+  preview: [];
+  mailbox: [repository: string];
+  cancel: [];
+}>();
 </script>
 
 <template>
@@ -27,8 +41,8 @@ const emit = defineEmits<{ signIn: []; preview: [] }>();
         </p>
         <p>
           <UIcon name="i-lucide-lock-keyhole" /><span
-            ><strong>Your team’s repository.</strong> GitHub controls who can
-            read and join in.</span
+            ><strong>Your team’s organization.</strong> Public conversations and
+            an administrator-owned private vault.</span
           >
         </p>
         <p>
@@ -47,7 +61,55 @@ const emit = defineEmits<{ signIn: []; preview: [] }>();
         :description="error"
         class="mb-4"
       />
+      <div v-if="requestUrl" class="space-y-4" role="status">
+        <template v-if="!deviceCode">
+          <p>
+            Submit the prepared sign-in issue on GitHub, then return here. Only
+            your GitHub username and sign-in time are public.
+          </p>
+          <UButton
+            :to="requestUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            label="Create sign-in request"
+            icon="i-lucide-github"
+            block
+          />
+          <p class="text-muted text-sm">
+            Waiting for your request and GitHub Actions…
+          </p>
+        </template>
+        <template v-else>
+          <p>
+            Enter this code on GitHub using the same account that created the
+            request.
+          </p>
+          <div class="flex items-center justify-between gap-3">
+            <strong class="text-2xl tracking-widest">{{ deviceCode }}</strong
+            ><UButton
+              :label="copied ? 'Copied' : 'Copy code'"
+              variant="outline"
+              @click="copy(deviceCode)"
+            />
+          </div>
+          <UButton
+            to="https://github.com/login/device"
+            target="_blank"
+            rel="noopener noreferrer"
+            label="Authorize on GitHub"
+            block
+          />
+          <p class="text-muted text-sm">Waiting for GitHub approval…</p>
+        </template>
+        <UButton
+          label="Cancel sign-in"
+          color="neutral"
+          variant="link"
+          @click="emit('cancel')"
+        />
+      </div>
       <UButton
+        v-else
         label="Continue with GitHub"
         icon="i-lucide-github"
         block
@@ -58,6 +120,27 @@ const emit = defineEmits<{ signIn: []; preview: [] }>();
       <p class="auth-permissions">
         No separate password. No token to copy and paste.
       </p>
+      <details v-if="!requestUrl" class="mb-4 text-sm">
+        <summary class="cursor-pointer text-muted">
+          Use your organization’s GitWok
+        </summary>
+        <div class="mt-3 space-y-3">
+          <UFormField
+            label="Authentication repository"
+            description="Your team’s public GitHub sign-in mailbox."
+            ><UInput
+              v-model="mailbox"
+              placeholder="your-org/gitwok-auth"
+              class="w-full"
+          /></UFormField>
+          <UButton
+            label="Connect team sign-in"
+            variant="outline"
+            :disabled="!mailbox"
+            @click="emit('mailbox', mailbox.trim())"
+          />
+        </div>
+      </details>
       <div class="auth-footer">
         <UButton
           label="Explore the local preview"

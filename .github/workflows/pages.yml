@@ -31,11 +31,19 @@ jobs:
           REPOSITORY_NAME: ${{ github.event.repository.name }}
           NUXT_PUBLIC_OAUTH_BROKER_URL: ${{ vars.OAUTH_BROKER_URL }}
           NUXT_PUBLIC_DEFAULT_REPOSITORY: ${{ vars.DEFAULT_REPOSITORY }}
+          NUXT_PUBLIC_AUTH_REPOSITORY: ${{ vars.AUTH_REPOSITORY }}
         run: |
           if [ -n "$CUSTOM_DOMAIN" ]; then
             export BASE_PATH=/
           else
             export BASE_PATH="/$REPOSITORY_NAME/"
+          fi
+          # Empty repository variables must not override a template copy's public config file.
+          if [ -z "$NUXT_PUBLIC_AUTH_REPOSITORY" ]; then
+            unset NUXT_PUBLIC_AUTH_REPOSITORY
+          fi
+          if [ -z "$NUXT_PUBLIC_DEFAULT_REPOSITORY" ]; then
+            unset NUXT_PUBLIC_DEFAULT_REPOSITORY
           fi
           npm run check
       - uses: actions/upload-pages-artifact@v4

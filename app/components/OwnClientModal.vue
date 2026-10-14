@@ -12,23 +12,24 @@ const open = defineModel<boolean>("open", { required: true });
       <div class="own-copy">
         <BrandMark />
         <p>
-          Your workspace already lives in your GitHub repository. You can also
-          host the GitWok interface on your own GitHub Pages.
+          Your workspace lives in your GitHub organization. You can also host
+          the GitWok interface on your own GitHub Pages.
         </p>
         <ol>
           <li>Create a client repository from the GitWok template.</li>
           <li>
-            Configure your own GitHub App and OAuth handler for your site.
+            Run the workspace installer with --own-client and register your
+            workspace App.
           </li>
           <li>
             Publish with the included Pages workflow and connect your existing
-            chat repository.
+            workspace repositories.
           </li>
         </ol>
         <p class="text-muted">
-          The client repository can be public while your chat repository stays
-          private. Updates are reviewed changes to your copy; a template does
-          not update itself.
+          Public channels live in gitwok-chat; all private channels and DMs
+          share one administrator-only gitwok-vault. Updates are reviewed
+          changes to your copy; a template does not update itself.
         </p>
         <UButton
           label="Use the GitWok template"

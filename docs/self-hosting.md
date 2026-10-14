@@ -1,97 +1,102 @@
 # Host your own GitWok
 
-You need a GitHub account, a chat repository, a public client repository for
-free GitHub Pages hosting, and somewhere to run the small OAuth handler. This
-repository includes a Cloudflare Worker for that handler. It does not host chat.
+## GitHub-only workspace
 
-## 1. Prepare the chat repository
+Use a GitHub organization you own and Node.js 24 with the authenticated `gh` CLI.
+Set organization **Settings → Member privileges → Base permissions → None**.
+Review the effect on existing repositories first; GitWok refuses to change this
+organization-wide setting automatically.
 
-Create a private repository (or choose an existing one), enable Discussions in
-Settings → General → Features, and invite participants using their GitHub
-accounts. Start a Discussion such as `general`; each Discussion becomes a
-channel. Participants must have access to that repository.
+```sh
+git clone https://github.com/inchidev/gitwok.git
+cd gitwok
+npm ci
+npm run setup -- --organization YOUR_ORG --own-client
+```
 
-GitHub Free supports private repositories and unlimited collaborators. An
-organization on a paid plan has its own member/seat billing.
+The installer creates public `gitwok-chat` and `gitwok-auth`, and one private
+`gitwok-vault`. It does not invite users to the vault. Do not assign organization
+teams, ordinary collaborators or unrelated Apps to that repository. Organization
+owners retain GitHub's inherent administrative access.
 
-## 2. Create your client copy
+Open the temporary local URL printed by the installer. Review and create the
+workspace GitHub App on GitHub. Its generated private key and a mailbox encryption
+key are stored in `gitwok-auth` Actions Secrets, never in public files. Keep the
+installer running until it reports completion; interrupted callbacks can be
+retried while that process is running.
 
-Use the GitWok repository's **Use this template** button to create a public
-client repository. Your chat repository remains separate and private. The
-client repository must contain no credentials or chat exports.
+Follow the printed links to:
 
-Choose your Pages URL before registering OAuth: for example,
-`https://your-team.github.io/gitwok/`, or your own domain. The trailing slash
-and any project subdirectory matter: use the same exact URL throughout.
+1. Enable **Device Flow** in the workspace App settings. Keep expiring user tokens enabled.
+2. Install the App only on `gitwok-chat`, `gitwok-auth` and `gitwok-vault`.
+3. Open the workspace URL and complete sign-in through a prepared issue and GitHub's device approval.
+4. Invite participants to the GitHub organization: its private workspace App can only be authorized by organization members. Then add them to GitWok by username, create a private channel, and verify access from a member's account before treating the setup as complete.
 
-## 3. Register a GitHub App
+The App requests Discussions, Issues and Contents write, Metadata read, pull
+requests read, and organization Projects read. Private repository Contents is
+used for membership; Discussions is used for conversations. No OAuth client
+secret is needed in mailbox mode.
 
-In your GitHub account or organization settings, open Developer settings →
-GitHub Apps → New GitHub App. Use these settings:
+With `--own-client`, a public `gitwok-client` is generated from the GitWok template.
+The installer writes public `gitwok-client.json`, configures Actions
+as the Pages build source, and dispatches the included Pages workflow. Without
+that flag, the workspace uses the shared client at `gitwok.inchi.dev`. Teams
+must trust the JavaScript served by whichever client they use.
 
-| Setting                              | Value                                                |
-| ------------------------------------ | ---------------------------------------------------- |
-| Name                                 | A unique name for your GitWok client                 |
-| Homepage                             | Your client URL                                      |
-| Callback URL                         | Your exact client root URL, including trailing slash |
-| Expire user authorization tokens     | Enabled                                              |
-| Webhooks                             | Disabled                                             |
-| Repository permissions               | Discussions: read and write; Metadata: read          |
-| Account and organization permissions | None                                                 |
-| Installation availability            | Choose the accounts your team needs                  |
+## Browser provisioning and the Creator App
 
-No App private key is needed for this client. Generate a client secret and
-store it only as a secret binding on the OAuth handler. Record the public
-client ID and App slug. Install the App on **only selected chat repositories**.
-Team members authorize it individually when signing in.
+The shared site's browser wizard needs a separately registered public **Creator
+App**. A maintainer can prepare it using `node scripts/register-creator.mjs`, then
+review the App registration on GitHub and enable Device Flow. That helper updates
+the existing shared auth repository's public Creator configuration without
+replacing its mailbox key. Install the Creator on the target organization and
+approve its provisioning permissions before using the browser wizard. Prefer
+Only select repositories: repositories the App creates are automatically added
+to its installation. It does not need blanket access to unrelated repositories.
+See [GitHub installation access](https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party).
 
-## 4. Configure the OAuth handler
+The Creator needs repository Administration, Contents, Workflows, Secrets,
+Actions, Pages and Discussions write, plus organization Members and Administration
+read. Organization Administration read lets setup verify base permissions before
+creating the private vault; it cannot change those settings.
+It creates the workspace's separate runtime App; it does not retain that App's
+private key in a shared service. Revoke the Creator after installation if desired.
 
-`oauth/worker.ts` is the complete handler. `npm run build:oauth` produces the
-standalone module at `dist/oauth-worker.mjs` for API-based deployment. The
-Wrangler configuration is in `oauth/wrangler.jsonc` for teams using that CLI.
+## Manual Pages deployment
 
-| Binding                | Type        | Value                                        |
-| ---------------------- | ----------- | -------------------------------------------- |
-| `GITHUB_CLIENT_ID`     | Public text | Your App's client ID, not its numeric App ID |
-| `GITHUB_APP_SLUG`      | Public text | The slug in `github.com/apps/<slug>`         |
-| `CLIENT_URL`           | Public text | Your exact client root URL                   |
-| `GITHUB_CLIENT_SECRET` | Secret      | Your App's client secret                     |
+For a reviewed client copy, set repository Actions variables:
 
-Use HTTPS in production. Each handler accepts one exact client origin and
-callback, not arbitrary copies of the app. A development callback may use
-`http://127.0.0.1:<port>/`; keep development and production Apps separate.
+| Variable             | Example                |
+| -------------------- | ---------------------- |
+| `AUTH_REPOSITORY`    | `YOUR_ORG/gitwok-auth` |
+| `DEFAULT_REPOSITORY` | `YOUR_ORG/gitwok-chat` |
 
-The handler accepts `/config` and `/exchange`, does not store tokens or messages,
-and discards refresh tokens. Set an appropriate request limit at your hosting
-provider if exposing the exchange publicly. Users sign in again after expiry.
+Enable GitHub Actions as the Pages source. Run **Deploy GitWok client**. Leave
+`custom_domain` blank for the repository Pages path, or supply your configured
+custom domain. The workflow generates static `.output/public`; no credentials
+belong in Pages variables or build output. Local development uses the equivalent
+`NUXT_PUBLIC_AUTH_REPOSITORY` and `NUXT_PUBLIC_DEFAULT_REPOSITORY` environment variables.
 
-## 5. Publish the client
+## Legacy OAuth fallback
 
-In the client repository's Settings → Secrets and variables → Actions →
-Variables, set:
+Teams using only direct repository Discussions can still deploy `oauth/worker.ts`.
+Register an App with Discussions write and Metadata read, exact client callback,
+expiring user tokens and disabled webhooks. Put its client secret only in the
+handler's secret binding. Configure `GITHUB_CLIENT_ID`, `GITHUB_APP_SLUG`,
+`CLIENT_URL`, and secret `GITHUB_CLIENT_SECRET` on the handler; set public client
+variable `OAUTH_BROKER_URL`. `npm run build:oauth` produces its standalone module.
+This mode does not provide the administrator-only vault.
 
-- `OAUTH_BROKER_URL`: the public HTTPS address of your handler, without a path.
-- `DEFAULT_REPOSITORY`: `owner/chat-repository`.
+## Updates, capacity and backups
 
-Enable GitHub Actions as the Pages build source. Run the **Deploy GitWok client**
-workflow on your reviewed branch. Leave `custom_domain` blank for a project URL;
-provide it only after configuring that custom domain in Pages settings and DNS.
-The workflow builds `.output/public` and never needs the App secret.
+Templates do not auto-sync. Review upstream changes, apply them to your own
+client and auth workflow sources, run checks, then deploy. Preserve your own
+`gitwok-auth.json` and Secrets; bootstrap scripts deliberately refuse accidental
+key rotation or adoption of unrelated repositories. Keep a protected backup of
+your App and mailbox keys outside the public repositories.
 
-Sign in, open **Your workspaces**, and choose or enter the chat repository. If
-it is missing, check the App's selected repositories, your own repository
-invitation and whether Discussions is enabled. After installing on another
-repository, use **Refresh list**.
-
-## Updates and data
-
-Template repositories have independent history and do not automatically sync.
-Review upstream releases and apply changes to your copy, resolve conflicts,
-run checks, then publish with your own Pages workflow. Keep public configuration
-in your repository variables and secrets on your OAuth handler.
-
-Discussion history is held by GitHub, not by the client template or a Git clone.
-Moving the interface does not require moving the conversations. The current
-preview export exports only the local preview's selected channel; it is not a
-workspace backup tool.
+A Git clone does not back up Discussion history. The current preview export is
+not a workspace backup. GitHub retains conversation data; the client has no
+persistent private-message mirror. Public mailbox metadata remains public even
+though request contents are encrypted. Private operations have Actions queue
+latency and periodically poll, rather than providing realtime delivery.

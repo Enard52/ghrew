@@ -3,6 +3,8 @@ export interface Channel {
   name: string;
   description: string;
   url?: string;
+  repository?: string;
+  kind?: "public" | "private" | "dm";
 }
 
 export interface Message {

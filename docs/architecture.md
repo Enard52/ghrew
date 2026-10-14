@@ -1,109 +1,143 @@
 # Architecture
 
-## Runtime boundaries
+## Runtime
 
 ```text
-GitHub Pages                           GitHub
-Nuxt SPA in the browser  ────────────>  REST: identity, installations, repositories
-  Vue Query cache        ────────────>  GraphQL: Discussions, comments, replies
-  local drafts
-          │ only during sign-in
-          ▼
-OAuth Worker ───────────────────────>  GitHub OAuth code exchange
-  App client secret
-  no storage, no chat endpoints
+Static Nuxt client on GitHub Pages
+  ├── GitHub user token → public Discussions / Issues / Projects
+  └── encrypted requests → public gitwok-auth issues
+                                │ issue-opened workflow
+                           GitHub Actions
+                                ├── Device Flow → encrypted user session
+                                └── workspace App → private gitwok-vault
+                                      membership + conversation checks
 ```
 
-The application is Nuxt 4 with `ssr: false`. `nuxt generate` emits static HTML,
-JavaScript, CSS and fonts. No Nitro application server is deployed to Pages.
-The separate Worker implements only `GET /config`, `POST /exchange`, and CORS
-preflight. It has no GitHub App private key, installation token, database,
-session registry, refresh-token store or message proxy.
+An organization is the workspace. Public channels can be collected from its
+Discussions repositories. Every managed private channel and DM resides in the
+single `ORG/gitwok-vault`. The public source/template repository contains client
+code, not a workspace's conversations. Optional `gitwok-client` is a separate
+team-owned Pages deployment.
 
-## Identity and OAuth
+## Identity and mailbox
 
-A shared GitHub App has repository permissions **Discussions: read and write**
-and GitHub's required **Metadata: read**. It requests no code/Contents, email,
-administration or organization-membership permission. Install it only on
-selected chat repositories. Each participant authorizes the App with their
-own GitHub account. Effective permissions are the intersection of the App's
-permissions, installation access and the user's own access.
+The browser creates an ephemeral P-256 ECDH key pair and random request ID.
+Public configuration contains the Action's ECDH public key and App client ID.
+AES-256-GCM authenticates each envelope with the request ID as additional data;
+replies must use the configured server key. Keys and credentials never enter
+issue URLs in plaintext. The request includes only its public key, request ID,
+time, operation class and, for vault operations, encrypted payload.
 
-The browser generates random state and an S256 PKCE verifier/challenge,
-storing the pending transaction in sessionStorage for at most ten minutes.
-GitHub redirects to the exact static client root. The client removes the
-callback parameters from the address bar, consumes and validates state once,
-and sends the code/verifier to the broker. The broker uses its configured
-callback and App secret when exchanging at GitHub's fixed token endpoint.
+The GitHub issue event supplies identity: `issue.user.id` must match `sender.id`.
+User-submitted author fields are ignored. The Action rejects stale requests and
+misrouted vault titles. Device Flow does not need a client secret. Before releasing
+a token, the Action requests `/user` with it and checks the immutable GitHub ID
+against the original issue author. Refresh credentials are discarded. Only
+expiring sessions of at most eight hours are accepted.
 
-The broker requires the exact client Origin, bounded JSON input and a valid
-PKCE verifier. It does not accept caller-supplied upstream or redirect URLs.
-Responses use `no-store`; upstream error bodies and credentials are never
-reflected or logged by application code. GitHub refresh tokens are discarded.
-Only expiring access tokens are accepted.
+Access tokens and pending browser private keys stay in sessionStorage; logout
+clears credentials and query caches. Workspace switching changes the mailbox
+and requires authorization for that App. Any script delivered by the client
+origin can read its session. A team-owned, reviewed client reduces dependence
+on the shared site's operator but does not remove GitHub as a trust boundary.
 
-The access token is kept in sessionStorage for the current tab, survives a
-reload, and expires at GitHub's reported time (normally eight hours). It is
-never persisted in localStorage or placed in URLs. After expiry, sign in
-again. Logout removes the session and clears the Vue Query cache. Browser
-scripts on the client origin can access this credential; serving the client
-is a trust boundary. The broker also sees the token during its exchange.
-This is not a claim that the shared service operator has no technical access.
+The public mailbox exposes GitHub usernames, timestamps, request classes, lengths
+and encrypted archives. This protocol has no forward secrecy: compromise of the
+long-lived mailbox private key can decrypt retained envelopes, including old
+session tokens (normally already expired). Protect and rotate keys deliberately;
+rotation invalidates in-flight requests. Do not describe this as E2EE.
 
-## Conversations and synchronization
+## Vault authorization
 
-One repository maps to one workspace, Discussion to channel, comment to message,
-and reply to thread. A complete channel scan follows every Discussion page.
-A message scan follows every comment page and every reply page. Zod validates
-responses. A failure on any page fails that scan rather than exposing a partial
-snapshot as a complete conversation.
+The Action signs an App JWT and mints a short-lived installation token scoped
+only to `gitwok-vault`, with Contents and Discussions write permissions. It checks
+that the repository is private, reads `.gitwok/members.json`, and audits all
+repository collaborators, including inherited organization/team grants. It
+fails closed if a reader is not a declared workspace administrator. Installation
+tokens are revoked after the operation and never returned to a browser.
 
-Vue Query holds remote messages in memory. A successful complete scan replaces
-that channel's cache, reflecting edits and deletions. Query keys include the
-GitHub login, repository and channel. Switching workspaces does not reuse
-another repository's messages or drafts. Sending captures the original workspace
-and draft; a late acknowledgement cannot clear newly typed text or move a
-message into the new workspace.
+GitHub organization owners inherently administer repositories. Organization
+base permissions must be None; members and teams receive no vault grants.
+Administrators control the repository, workflow code and App secrets and can
+read every conversation, including DMs. Other installed Apps may have access
+independently; administrators must restrict installations as well as human grants.
 
-Channels refresh every minute and the open conversation every twenty seconds
-while the tab is visible and online. Rate limits increase the delay. GitHub
-mutations are never automatically retried: a lost response can hide a successful
-write, so blindly retrying could duplicate a message. A failed send retains its
-draft. There is no websocket realtime, typing, presence or offline send queue.
-Search covers the loaded conversation, including its replies, rather than
-claiming an index of every channel.
+The member directory uses immutable GitHub IDs. An administrator adds/removes
+GitWok members without granting them vault repository access. Each request checks
+current membership, then conversation membership. Administrators may create
+private channels. Members may create DMs with exactly one other current member;
+a canonical sorted pair ID reuses an existing DM. Removed members lose future
+access even if old conversation metadata still includes their ID. Already
+received content cannot be recalled.
 
-## Local storage
+Each vault Discussion stores conversation metadata. Each comment stores one
+message record with the authenticated sender and optional parent ID. GitHub
+attributes the underlying mutation to the workspace App; GitWok renders the
+verified sender from the record. Guessed conversation/thread IDs do not bypass
+checks. All pages are fetched; malformed or incomplete scans fail. Responses
+are encrypted in chunks, bounded to 200 chunks of 5,000 characters.
 
-VueUse stores per-account/repository/channel/thread drafts and workspace
-preferences in localStorage. The explicitly local preview stores its sample
-messages there too. Remote conversation history is not persisted by this client.
-Logout clears credentials and the remote cache; account-scoped drafts remain on
-that device for the same user to resume. Browser-profile access can reveal local
-drafts. Closing the tab clears sessionStorage but leaves localStorage drafts.
+Vault jobs serialize per auth repository, with up to 100 queued runs. Sends use
+request IDs for deduplication. Browser retries of the same failed draft retain
+that ID within the tab; closing/reloading loses this retry memory. There is no
+offline outbox. Public mutations are not blindly retried.
 
-RxDB is deliberately omitted. It would become useful for a persistent,
-queryable message mirror and a specified offline-outbox/reconciliation model.
-Installing it alongside Vue Query does not create GitHub replication, realtime
-or authentication automatically.
+## Installer and ownership
 
-## Privacy and ownership
+A global Creator App is a provisioning tool, separate from the workspace App.
+Its administrator user token can create repositories, configure Actions Secrets
+and workflows, and optionally publish Pages. The administrator must own the
+organization. Reserved names are preflighted; unrelated repositories are never
+overwritten. Installation markers allow retries for the same setup. Existing
+member directories are preserved on retry.
 
-Repository visibility controls all Discussions in it. Anyone granted access
-can read through GitHub as well as GitWok. No channel-level privacy or
-end-to-end encryption is claimed. Different audiences need separate repositories.
-GitHub retains the data and authorization role.
+The workspace App is created through GitHub's manifest flow with a one-time,
+random registration state. Its private key and generated mailbox key are saved
+in the team's auth repository Actions Secrets. Browser recovery material remains
+in sessionStorage during an interrupted registration. It is accepted for thirty
+minutes and removed on completion or when an expired retry is detected; closing
+the tab also clears it. A local CLI offers the same bootstrap using `gh`
+and a temporary loopback callback. It does not create a hosted service.
 
-The common client trusts our delivered JavaScript and OAuth service. A team can
-publish the client from its own public template repository while storing chat
-in a separate private repository. Its own App, OAuth handler, domain and reviewed
-updates reduce dependence on our infrastructure. A template copies files, not
-Discussions, and does not automatically receive upstream changes.
+The default workspace App is private: GitHub permits only members of its owning
+organization to authorize it. GitWok membership is an additional conversation
+access check, not an invitation to the GitHub organization. Paid organization
+plans may charge for those organization seats; private-vault separation does
+not waive GitHub billing. See [App visibility](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/making-a-github-app-public-or-private).
+
+Enable Device Flow manually and install the workspace App on `gitwok-chat`,
+`gitwok-auth` and `gitwok-vault`. Revoke the Creator's access after setup if no
+longer needed. A template is an independent copy, not a fork with automatic
+updates; Discussion data and Secrets are not copied.
+
+## Client behavior and limits
+
+Nuxt runs with `ssr:false`; Pages serves static output. Public channels load
+independently of the queued vault. Private lists/messages refresh every two
+minutes while visible; public messages every twenty seconds. Search covers the
+loaded conversation. No presence, typing, push transport or websocket service
+is claimed. Projects links and Issues are available through the user's GitHub
+permissions, not through the vault's installation token.
+
+Vue Query holds remote history in memory. VueUse stores per-account/workspace/
+channel/thread drafts and preferences in localStorage. Remote private history is
+not persisted. Account-scoped drafts remain after logout; browser-profile access
+can expose them. No RxDB replication or persistent message mirror is included.
+
+The optional legacy OAuth Worker handles only configuration and a PKCE code
+exchange. It remains a fallback for direct GitHub conversations, not a vault
+proxy. Its secret belongs in the Worker, never in public build configuration.
+
+Public issue triggers can consume Actions capacity even for rejected requests.
+Workflow queues, GitHub rate limits, action start latency and account policies
+bound this experimental design. Standard public hosted runners are free, but
+availability and abuse controls remain GitHub's responsibility. No public HTTP
+endpoint is provided by Actions.
 
 ## Primary sources
 
-- [GitHub App user OAuth and effective permissions](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app)
-- [GitHub Discussions GraphQL API](https://docs.github.com/en/graphql/guides/using-the-graphql-api-for-discussions)
-- [GitHub Discussions visibility](https://docs.github.com/en/discussions/quickstart)
-- [Nuxt static deployment](https://nuxt.com/docs/4.x/getting-started/deployment)
-- [GitHub Free and paid plans](https://docs.github.com/en/get-started/learning-about-github/githubs-plans)
+- [GitHub App Device Flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app)
+- [App manifest registration](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest)
+- [Repository collaborators and inherited access](https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators)
+- [Actions concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+- [Discussions GraphQL](https://docs.github.com/en/graphql/guides/using-the-graphql-api-for-discussions)

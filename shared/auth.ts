@@ -16,6 +16,8 @@ export const oauthConfigSchema = z.object({
 export const sessionSchema = z.object({
   accessToken: z.string().min(1),
   expiresAt: z.number().positive(),
+  mailboxRepository: z.string().optional(),
+  installer: z.boolean().optional(),
 });
 export type GitHubSession = z.infer<typeof sessionSchema>;
 

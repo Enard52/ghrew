@@ -5,7 +5,9 @@ import {
   useDocumentVisibility,
 } from "@vueuse/core";
 import { z } from "zod";
-import type { Message } from "../../shared/chat";
+import type { Message, ChatTransport } from "../../shared/chat";
+import type { MailboxConfig } from "../../shared/mailbox";
+import { VaultTransport } from "~/lib/vault";
 import { GitHubError, GitHubTransport } from "~/lib/github";
 import { previewChannels, previewMessages } from "~/lib/preview";
 
@@ -20,6 +22,8 @@ export function useChat(
   login: Ref<string>,
   preview: Ref<boolean>,
   repository: Ref<string>,
+  sources?: Ref<string[]>,
+  mailbox?: Ref<MailboxConfig | null>,
 ) {
   const queryClient = useQueryClient();
   const online = useOnline();
@@ -43,7 +47,12 @@ export function useChat(
   const scope = computed(() =>
     preview.value ? "preview" : `${login.value}:${repository.value}`,
   );
-  const roomKey = computed(() => ["channels", login.value, repository.value]);
+  const roomKey = computed(() => [
+    "channels",
+    login.value,
+    repository.value,
+    ...(sources?.value || []),
+  ]);
   const messageKey = computed(() => [
     "messages",
     login.value,
@@ -55,7 +64,17 @@ export function useChat(
     queryKey: roomKey,
     enabled: authenticated,
     queryFn: ({ signal }) =>
-      new GitHubTransport(repository.value, token.value).listChannels(signal),
+      Promise.all(
+        (sources?.value || [repository.value]).map(async (source) =>
+          (
+            await new GitHubTransport(source, token.value).listChannels(signal)
+          ).map((channel) => ({
+            ...channel,
+            repository: source,
+            kind: "public" as const,
+          })),
+        ),
+      ).then((groups) => groups.flat()),
     refetchInterval: (query) => {
       if (
         !online.value ||
@@ -72,12 +91,43 @@ export function useChat(
       );
     },
   });
+  const vaultChannelsQuery = useQuery({
+    refetchOnWindowFocus: false,
+    queryKey: computed(() => [
+      "vault-channels",
+      login.value,
+      mailbox?.value?.repository,
+    ]),
+    enabled: computed(
+      () => authenticated.value && Boolean(mailbox?.value?.vault),
+    ),
+    queryFn: ({ signal }) =>
+      new VaultTransport(mailbox!.value!, token.value).listChannels(signal),
+    retry: false,
+    refetchInterval: () =>
+      online.value && visibility.value === "visible" ? 120_000 : false,
+  });
   const channels = computed(() =>
-    preview.value || !authenticated.value
+    preview.value
       ? previewChannels
-      : channelsQuery.data.value || [],
+      : !authenticated.value
+        ? []
+        : [
+            ...(channelsQuery.data.value || []),
+            ...(vaultChannelsQuery.data.value || []),
+          ],
   );
   const messagesQuery = useQuery({
+    retry: (attempt, error) =>
+      !["private", "dm"].includes(
+        channels.value.find((c) => c.id === selectedChannel.value)?.kind || "",
+      ) &&
+      attempt < 2 &&
+      !(error instanceof GitHubError),
+    refetchOnWindowFocus: () =>
+      !["private", "dm"].includes(
+        channels.value.find((c) => c.id === selectedChannel.value)?.kind || "",
+      ),
     queryKey: messageKey,
     enabled: computed(
       () =>
@@ -85,10 +135,16 @@ export function useChat(
         channels.value.some((channel) => channel.id === selectedChannel.value),
     ),
     queryFn: ({ signal }) =>
-      new GitHubTransport(repository.value, token.value).listMessages(
-        selectedChannel.value,
-        signal,
-      ),
+      (["private", "dm"].includes(
+        channels.value.find((c) => c.id === selectedChannel.value)?.kind || "",
+      ) && mailbox?.value
+        ? new VaultTransport(mailbox.value, token.value)
+        : new GitHubTransport(
+            channels.value.find((c) => c.id === selectedChannel.value)
+              ?.repository || repository.value,
+            token.value,
+          )
+      ).listMessages(selectedChannel.value, signal),
     refetchInterval: (query) => {
       if (
         !online.value ||
@@ -98,7 +154,12 @@ export function useChat(
       )
         return false;
       return Math.max(
-        20_000,
+        ["private", "dm"].includes(
+          channels.value.find((c) => c.id === selectedChannel.value)?.kind ||
+            "",
+        )
+          ? 120_000
+          : 20_000,
         query.state.error instanceof GitHubError
           ? query.state.error.retryAfterMs
           : 0,
@@ -106,12 +167,13 @@ export function useChat(
     },
   });
   const messages = computed(() => {
-    const data =
-      preview.value || !authenticated.value
-        ? localMessages.value.filter(
-            (message) => message.channelId === selectedChannel.value,
-          )
-        : messagesQuery.data.value || [];
+    const data = preview.value
+      ? localMessages.value.filter(
+          (message) => message.channelId === selectedChannel.value,
+        )
+      : authenticated.value
+        ? messagesQuery.data.value || []
+        : [];
     return [...data].sort(
       (a, b) =>
         a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
@@ -210,7 +272,7 @@ export function useChat(
       queryKey: string[];
       local: boolean;
       sessionToken: string;
-      transport: GitHubTransport | null;
+      transport: ChatTransport | null;
     }) => {
       const body = messageBodySchema.parse(input.body);
       if (!input.local) {
@@ -266,7 +328,13 @@ export function useChat(
         local: preview.value,
         sessionToken: token.value,
         transport: authenticated.value
-          ? new GitHubTransport(repository.value, token.value)
+          ? ["private", "dm"].includes(channel.value?.kind || "") &&
+            mailbox?.value
+            ? new VaultTransport(mailbox.value, token.value)
+            : new GitHubTransport(
+                channel.value?.repository || repository.value,
+                token.value,
+              )
           : null,
       });
     } catch {
@@ -276,6 +344,7 @@ export function useChat(
   function refresh() {
     if (!authenticated.value || !online.value) return;
     void channelsQuery.refetch();
+    if (mailbox?.value?.vault) void vaultChannelsQuery.refetch();
     if (channel.value) void messagesQuery.refetch();
   }
   return {
@@ -296,6 +365,7 @@ export function useChat(
     send,
     refresh,
     channelsQuery,
+    vaultChannelsQuery,
     messagesQuery,
     sendMutation,
   };

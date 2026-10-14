@@ -224,7 +224,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
   ).toBeVisible();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Draft for the public workspace");
-  await page.getByRole("button", { name: /gitwok inchidev\/gitwok/ }).click();
+  await page.getByRole("button", { name: /inchidev inchidev\/gitwok/ }).click();
   await page
     .getByRole("button", { name: "my-team/private-chat", exact: true })
     .click();
@@ -237,7 +237,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
   await expect(composer).toHaveValue("");
   await composer.fill("Draft for the private workspace");
   await page
-    .getByRole("button", { name: /private-chat my-team\/private-chat/ })
+    .getByRole("button", { name: /my-team my-team\/private-chat/ })
     .click();
   await page
     .getByRole("button", { name: "inchidev/gitwok", exact: true })
