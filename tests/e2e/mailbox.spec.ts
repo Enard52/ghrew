@@ -258,7 +258,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
     }
     throw new Error(`Unexpected browser request: ${path}`);
   });
-  await page.goto("/");
+  await page.goto("/login");
   await expect(page.locator(".message")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Continue with GitHub", exact: true })
@@ -286,6 +286,9 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
     page.getByRole("button", { name: "acme", exact: true }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Leadership", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Leadership", exact: true }),
+  ).toBeVisible();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await expect(composer).toBeEnabled();
   await composer.fill("Confidential strategy for the next launch");
@@ -352,7 +355,7 @@ test("a legacy broker session cannot carry over into a configured mailbox", asyn
       },
     });
   });
-  await page.goto("/");
+  await page.goto("/login");
   await expect(
     page.getByRole("button", { name: "Continue with GitHub", exact: true }),
   ).toBeVisible();

@@ -21,7 +21,7 @@ const emit = defineEmits<{
 <template>
   <section class="auth-content" aria-label="Sign in">
     <template v-if="!compact">
-      <div class="auth-brand"><BrandMark /><span>Ghrew</span></div>
+      <NuxtLink to="/" class="auth-brand" aria-label="Ghrew home"><BrandMark /><span>Ghrew</span></NuxtLink>
       <h1>Sign in to Ghrew</h1>
       <p class="auth-intro">Your team’s conversations, in one place.</p>
     </template>

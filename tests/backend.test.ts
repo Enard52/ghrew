@@ -313,15 +313,44 @@ afterEach(async () => {
 });
 
 describe("Cloudflare backend", () => {
-  it("returns sign-in to the selected workspace and rejects arbitrary redirect destinations", async()=>{
+  it("returns sign-in to workspace, private channel and DM links while rejecting arbitrary destinations", async () => {
     await register();
-    for(const [input,destination] of [["team/ghrew-chat","/?workspace=team%2Fghrew-chat"],["https://evil.test/","/"]] as const) {
-      const start=await request("/api/auth/start?workspace="+encodeURIComponent(input));
-      const state=new URL(start.headers.get("location")!).searchParams.get("state");
-      const callback=await request(`/api/auth/callback?code=x&state=${state}`,{headers:{Cookie:cookieValue(start.headers.get("set-cookie"))}});
+    for (const [query, destination] of [
+      ["workspace=" + encodeURIComponent("team/ghrew-chat"), "/w/team"],
+      ["returnTo=" + encodeURIComponent("/w/team/c/private-channel?thread=m1"), "/w/team/c/private-channel?thread=m1"],
+      ["returnTo=" + encodeURIComponent("/w/team/dm/direct-channel"), "/w/team/dm/direct-channel"],
+      ["returnTo=" + encodeURIComponent("//evil.test/"), "/w/team"],
+      ["returnTo=" + encodeURIComponent("/w/team/c/%2f%2fevil.test"), "/w/team"],
+      ["workspace=" + encodeURIComponent("https://evil.test/"), "/w/team"],
+    ]) {
+      const start = await request("/api/auth/start?" + query);
+      const state = new URL(start.headers.get("location")!).searchParams.get("state");
+      const callback = await request(`/api/auth/callback?code=x&state=${state}`, { headers: { Cookie: cookieValue(start.headers.get("set-cookie")) } });
       expect(callback.status).toBe(303);
       expect(callback.headers.get("location")).toBe(destination);
     }
+  });
+  it("serves a split-hosted deep link from the public shell without forwarding private headers", async () => {
+    const forwarded: { url: string; cookie: string | null; authorization: string | null }[] = [];
+    const shellWorker = new Miniflare(convertV4MiniflareOptions({
+      modules: true,
+      scriptPath: "artifacts/backend-test-worker.mjs",
+      compatibilityDate: "2026-10-14",
+      compatibilityFlags: ["nodejs_compat"],
+      outboundService: async req => {
+        forwarded.push({ url: req.url, cookie: req.headers.get("Cookie"), authorization: req.headers.get("Authorization") });
+        return new MFResponse("public app shell", { headers: { "Content-Type": "text/html" } });
+      },
+    }));
+    try {
+      const result = await shellWorker.dispatchFetch(origin + "/w/team/c/private-channel?thread=m1", {
+        headers: { Cookie: "private-session", Authorization: "private-credential" },
+      });
+      expect(result.status).toBe(200);
+      expect(await result.text()).toBe("public app shell");
+      expect(result.headers.get("Cache-Control")).toBe("no-store");
+      expect(forwarded).toEqual([{ url: origin + "/200.html", cookie: null, authorization: null }]);
+    } finally { await shellWorker.dispose(); }
   });
   it("keeps a new deployment closed until an operator supplies the setup key", async () => {
     expect((await request("/health")).status).toBe(200);

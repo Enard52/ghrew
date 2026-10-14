@@ -44,6 +44,9 @@ test("threads persist replies and user-supplied HTML is displayed as text", asyn
     page.locator(".thread-feed").getByText(malicious, { exact: true }),
   ).toBeVisible();
   expect(await page.evaluate(() => "ghrewInjected" in window)).toBe(false);
+  await expect(page).toHaveURL(/thread=preview-guide/);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Thread", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close thread" }).click();
   await expect(page.locator(".thread-panel")).toHaveCount(0);
   await expect(page.locator(".ghrew-shell")).not.toHaveClass(/has-thread/);
@@ -91,7 +94,7 @@ test("entry is a dedicated sign-in page and an unavailable OAuth service fails c
   await page.route("http://127.0.0.1:5180/config", (route) =>
     route.fulfill({ status: 503, body: "{}" }),
   );
-  await page.goto("/");
+  await page.goto("/login");
   await expect(
     page.getByRole("heading", { name: "Sign in to Ghrew", exact: true }),
   ).toBeVisible();

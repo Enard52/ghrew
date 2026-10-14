@@ -23,7 +23,7 @@ test("workspace creation is reachable before sandbox sign-in on desktop and phon
       },
     }),
   );
-  await page.goto("/");
+  await page.goto("/login");
   await page
     .getByRole("link", { name: "Create your own workspace", exact: true })
     .click();

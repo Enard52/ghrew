@@ -182,3 +182,29 @@ The familiar GitHub/Slack silhouette is intentional, not an originality claim.
 
 Physical devices, screen readers, real Windows glyph rendering and production
 performance have not been measured. The result uses system fonts deliberately.
+
+## 2026-10-15 landing, round 1
+
+Independent continued critic reviewed 390/768/1440 and full pages. Concept,
+GitHub/Slack fidelity, non-slop, first screen, type, colour, richness, structure,
+responsive and screenshot scored 4; craft, platform coverage and signature were
+provisional 3. Requested readable 12px phone preview rail text, working reply/
+composer actions, dark and platform evidence, and a switching-channel filmstrip.
+
+## 2026-10-15 landing, round 2
+
+All requests landed: 12px meaningful phone rail labels with a 112px rail; blue
+reply count links to the actual demo thread; composer enters demo; channel buttons
+switch selection and messages. Independent critic scored every one of the 13
+rubric lines plus Fidelity 4, with no further visual changes requested. Done by
+the stop rule. Existing logo, Primer palette, system typography, chat features
+and light/dark themes retained.
+
+Evidence: `artifacts/routes/landing-r2/`, `landing-r2-dark/`,
+`landing-interaction/strip.png`, and `landing-matrix/matrix.md`. Both light/dark
+scans have no FAILs and keyboard focus walks have 13 stops. The 12-pass matrix
+(Windows scaling/contrast, Linux, Android, Firefox, WebKit desktop/iPhone, 320px,
+reduced motion and translation stress) has no FAILs. System-font and compact
+12–14px copy warnings are deliberate GitHub-language choices; no font replacement
+or oversized demo copy. These are local renders and emulations, not real-device
+or production proof. Content still requires JavaScript in the existing SPA build.

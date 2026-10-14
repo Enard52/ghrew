@@ -159,3 +159,26 @@ write, sign-out clearing the chat, and normal GitHub sign-in into the new
 organization. These are owner checks; a second independent participant and a
 fresh self-hosted deployment remain unverified. Private Git mirrors, Discussion
 snapshots and pre-move configuration are retained outside the public repository.
+
+## Application URLs
+
+`/` is the public project landing and does not request a session or conversations.
+`/login` handles GitHub sign-in; `/create/` remains the deployment/workspace setup.
+`/w/:organization` opens the workspace's first available conversation.
+Channels use `/w/:organization/c/:channelId`, including private channels; DMs use
+`/w/:organization/dm/:conversationId`. The `thread` query opens a reply thread.
+`/demo` and `/demo/c/:channelId` are local-only demonstration views.
+
+Channel/thread navigation uses router history, so Back and Forward work. Legacy
+`workspace`, `channel`, `auth` and `preview` root links are redirected to the new
+pages. Nonstandard repositories in the optional static mode use a `repo` query.
+OAuth stores only an allowlisted local destination and preserves conversation/
+thread links through sign-in. URL possession does not grant private access.
+
+The independent Worker serves deep links through its SPA asset binding. The
+sandbox still publishes static files on GitHub Pages: Cloudflare routes
+`ghrew.inchi.dev/w/*` and `ghrew.inchi.dev/demo/*` to `ghrew-api`, alongside the
+existing `/api/*` route. For these public document requests the Worker fetches
+`/200.html` from the same site's static origin without forwarding cookies or
+private headers, with a bounded timeout. `/login`, `/demo` and `/create/` are
+prerendered static entry files. Keep `/200.html` out of the Worker routes.

@@ -32,6 +32,8 @@ createServer(async (request, response) => {
       })
       .end(content);
   } catch {
-    response.writeHead(404).end();
+    if (!extname(pathname)) {
+      response.writeHead(200, { "Content-Type": "text/html", "Cache-Control": "no-store" }).end(await readFile(resolve(root, "200.html")));
+    } else response.writeHead(404).end();
   }
 }).listen(Number(process.env.PORT || 5179), "127.0.0.1");

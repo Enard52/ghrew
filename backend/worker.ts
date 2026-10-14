@@ -1,3 +1,4 @@
+import { appReturnTo, legacyWorkspacePath, workspacePath } from "../shared/routes";
 import { Buffer } from "node:buffer";
 import { z } from "zod";
 import { appSchema, Store, type App } from "./store";
@@ -84,10 +85,24 @@ export default {
     }
     if (url.pathname === "/health")
       return json({ service: "ghrew", version: 1 });
-    if (!url.pathname.startsWith("/api/"))
-      return env.ASSETS
-        ? env.ASSETS.fetch(request)
-        : json({ error: "Open the Ghrew frontend to continue." }, 404);
+    if (!url.pathname.startsWith("/api/")) {
+      if (env.ASSETS) return env.ASSETS.fetch(request);
+      // The sandbox publishes static files on GitHub Pages. Dynamic paths use
+      // its public SPA shell; no cookies or private request headers are forwarded.
+      if (/^\/(w|demo)\//.test(url.pathname) && ["GET", "HEAD"].includes(request.method)) {
+        try {
+          const shell = await fetch(new URL("/200.html", url.origin), {
+            method: request.method, redirect: "manual", signal: AbortSignal.timeout(15_000),
+          });
+          if (shell.status >= 300 && shell.status < 400) return json({ error: "Ghrew frontend address needs attention." }, 502);
+          return new Response(shell.body, { status: shell.status, headers: {
+            "Content-Type": shell.headers.get("Content-Type") || "text/html; charset=utf-8",
+            "Cache-Control": "no-store",
+          } });
+        } catch { return json({ error: "Ghrew could not load. Reload and try again." }, 502); }
+      }
+      return json({ error: "Open the Ghrew frontend to continue." }, 404);
+    }
     const store = new Store(env.DB, env.SETUP_TOKEN || "");
     let sessionId = "";
     try {
@@ -213,9 +228,10 @@ export default {
           ),
         ).toString("base64url");
         // Only a known local destination is retained; no arbitrary redirect URL is accepted.
-        const workspace=url.searchParams.get("workspace")||"";
+        const workspace = url.searchParams.get("workspace") || "";
         const returnTo = url.searchParams.get("setup") === "1" ? "/create/" :
-          /^[a-z\d-]+\/[\w.-]+$/i.test(workspace) ? "/?workspace="+encodeURIComponent(workspace) : "/";
+          appReturnTo(url.searchParams.get("returnTo")) || legacyWorkspacePath(workspace) ||
+          (env.SANDBOX_ORGANIZATION ? workspacePath(env.SANDBOX_ORGANIZATION) : "/login");
         const state = await store.state("oauth", { verifier, returnTo });
         const authorize = new URL("https://github.com/login/oauth/authorize");
         authorize.search = new URLSearchParams({
@@ -241,7 +257,7 @@ export default {
           );
         const pending = authState.parse(await store.consume(state, "oauth"));
         if (!code || code.length > 512 || url.searchParams.has("error"))
-          return redirect("/?authError=cancelled", [
+          return redirect("/login?authError=cancelled&returnTo=" + encodeURIComponent(pending.returnTo), [
             setCookie(request, FLOW, "", 0),
           ]);
         const credentials = await oauthToken(app, {

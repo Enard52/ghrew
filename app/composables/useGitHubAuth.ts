@@ -1,3 +1,4 @@
+import { appReturnTo } from "../../shared/routes";
 import { useQueryClient } from "@tanstack/vue-query";
 import { useNow, useIntervalFn } from "@vueuse/core";
 import {
@@ -149,6 +150,7 @@ export function useGitHubAuth() {
   async function initialize() {
     try {
       const url = new URL(window.location.href);
+      if (url.pathname.includes("/demo")) return;
       const incomingMailbox = url.searchParams.get("auth");
       if (incomingMailbox && incomingMailbox !== mailboxRepository.value) {
         const incoming = await mailboxConfig(incomingMailbox);
@@ -255,6 +257,9 @@ export function useGitHubAuth() {
   }
 
   async function signIn(isInstaller = false) {
+    const url = new URL(window.location.href);
+    const returnTo = appReturnTo(url.searchParams.get("returnTo")) || appReturnTo(url.pathname + url.search);
+    if (returnTo) sessionStorage.setItem("ghrew:return-to:v1", returnTo);
     error.value = "";
     busy.value = true;
     try {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { legacyWorkspacePath } from "../../shared/routes";
 import { z } from "zod";
 import { backendJson } from "~/lib/backend";
 import { backendWorkspaceSchema } from "~/composables/useBackendAuth";
@@ -214,7 +215,7 @@ async function create() {
           description="The public channel and administrator-only vault have been verified. Invite a second participant to check your team's complete sign-in and conversation flow."
         />
         <UButton
-          :to="`/?workspace=${encodeURIComponent(ready.repository)}`"
+          :to="legacyWorkspacePath(ready.repository)!"
           label="Open your workspace"
           block
         />

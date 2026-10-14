@@ -148,7 +148,7 @@ test("GitHub OAuth completes with PKCE, sends directly to Discussions, and clear
       }),
     });
   });
-  await page.goto("/");
+  await page.goto("/login");
   await page.getByRole("button", { name: "Continue with GitHub" }).click();
   await expect(
     page.getByText("A conversation from GitHub", { exact: true }),
@@ -194,7 +194,7 @@ test("failed sends preserve the draft, and refresh replaces edited and deleted m
 }) => {
   await session(page);
   const messages = await githubRoutes(page, true);
-  await page.goto("/");
+  await page.goto("/login");
   await expect(
     page.getByText("A conversation from GitHub", { exact: true }),
   ).toBeVisible();
@@ -221,7 +221,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
 }) => {
   await session(page);
   await githubRoutes(page);
-  await page.goto("/");
+  await page.goto("/login");
   await expect(
     page.getByText("A conversation from GitHub", { exact: true }),
   ).toBeVisible();

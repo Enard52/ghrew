@@ -51,3 +51,21 @@ system typography, real conversation content and the familiar sidebar because
 the user explicitly requested an exact GitHub visual language over Slack
 structure. This is an intentional redesign of the same product, not a reused
 look for an unrelated client.
+
+## 2026-10-15: public landing and application routes
+
+User-approved evolution of the existing GitHub/Slack direction: `/` becomes the
+project landing, `/login` the dedicated sign-in screen, `/w/:organization/c/:id`
+and `/w/:organization/dm/:id` the conversations. Keep the logo, Primer tokens,
+system font, green primary actions, blue selection, light/dark support and all
+chat features. Existing query links redirect; demo moves to `/demo`.
+
+The landing extends the chosen visual language rather than reopening the three
+visual directions above. First screen: “Your crew, on GitHub.”; channels, private
+groups and direct messages; “Open Ghrew”; “Try the demo”; “Free and open source.
+Bring your GitHub account.” The richness is a clearly labeled interactive demo
+using the application's existing sample conversations. Switching general/building
+shows the corresponding messages. No platform internals, infrastructure copy,
+fabricated customers or usage claims. Three short product explanations and source/
+inchi links finish the page. On phone the preview follows the introduction and
+retains its channel navigation. The root never loads identity or conversations.

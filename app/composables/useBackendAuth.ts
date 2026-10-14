@@ -1,3 +1,4 @@
+import { appReturnTo } from "../../shared/routes";
 import { useQueryClient } from "@tanstack/vue-query";
 import { z } from "zod";
 import { backendJson, backendResponse, backendToken } from "~/lib/backend";
@@ -62,6 +63,7 @@ export function useBackendAuth() {
   async function initialize() {
     try {
       const url = new URL(window.location.href);
+      if (url.pathname.includes("/demo")) return;
       const config = await backendJson<{ configured: boolean; sandbox: string }>("/api/config");
       sandbox.value=config.sandbox;
       if (!config.configured) {
@@ -77,7 +79,9 @@ export function useBackendAuth() {
         url.searchParams.delete("authError");
         history.replaceState(null, "", url);
       }
-      await load(url.searchParams.get("workspace")?.split("/")[0] || "");
+      const destination = appReturnTo(url.searchParams.get("returnTo"));
+      const organization = url.pathname.match(/\/w\/([^/]+)/)?.[1] || destination?.match(/^\/w\/([^/?]+)/)?.[1] || url.searchParams.get("workspace")?.split("/")[0] || "";
+      await load(organization);
     } catch (e) {
       error.value =
         e instanceof Error ? e.message : "Could not load your session.";
@@ -86,11 +90,12 @@ export function useBackendAuth() {
     }
   }
   async function signIn(setup = false) {
-    const query=new URLSearchParams();
-    if(setup)query.set("setup","1");
+    const query = new URLSearchParams();
+    if (setup) query.set("setup", "1");
     else {
-      const workspace=new URL(window.location.href).searchParams.get("workspace");
-      if(workspace)query.set("workspace",workspace);
+      const url = new URL(window.location.href);
+      const returnTo = appReturnTo(url.searchParams.get("returnTo")) || appReturnTo(url.pathname + url.search);
+      if (returnTo) query.set("returnTo", returnTo);
     }
     window.location.assign("/api/auth/start"+(query.size?"?"+query.toString():""));
   }

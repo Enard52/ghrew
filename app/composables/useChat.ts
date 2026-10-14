@@ -24,12 +24,13 @@ export function useChat(
   repository: Ref<string>,
   sources?: Ref<string[]>,
   mailbox?: Ref<MailboxConfig | null>,
+  requestedChannel?: Ref<string>,
 ) {
   const queryClient = useQueryClient();
   const online = useOnline();
   const visibility = useDocumentVisibility();
   let pendingInitialChannel =
-    new URL(window.location.href).searchParams.get("channel") || "";
+    requestedChannel?.value || "";
   const selectedChannel = ref(pendingInitialChannel);
   const selectedThread = ref("");
   const search = ref("");
@@ -234,7 +235,12 @@ export function useChat(
       (authenticated.value && Boolean(channel.value) && online.value),
   );
 
+  if (requestedChannel) watch(requestedChannel, (id) => {
+    pendingInitialChannel = id;
+    selectedChannel.value = id;
+  });
   watch(scope, () => {
+    pendingInitialChannel = requestedChannel?.value || pendingInitialChannel;
     selectedChannel.value = pendingInitialChannel;
     selectedThread.value = "";
     search.value = "";
@@ -242,6 +248,7 @@ export function useChat(
   watch(
     [
       channels,
+      selectedChannel,
       authenticated,
       channelsQuery.isPending,
       vaultChannelsQuery.isPending,
@@ -270,10 +277,7 @@ export function useChat(
       pendingInitialChannel = "";
     selectedThread.value = "";
     search.value = "";
-    const url = new URL(window.location.href);
-    if (id) url.searchParams.set("channel", id);
-    else url.searchParams.delete("channel");
-    history.replaceState(null, "", url);
+
   });
   watch(messages, () => {
     if (

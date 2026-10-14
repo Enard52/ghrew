@@ -64,6 +64,6 @@ export default defineNuxtConfig({
       authRepository: clientConfig?.authRepository || "",
     },
   },
-  nitro: { prerender: { routes: ["/create/"] } },
+  nitro: { prerender: { routes: ["/create/", "/login", "/demo"] } },
   typescript: { strict: true },
 });

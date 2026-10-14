@@ -10,11 +10,17 @@ import { listWorkspaceRepositories } from "~/lib/github";
 import type { Channel } from "../../shared/chat";
 import type { MailboxConfig } from "../../shared/mailbox";
 
+import { legacyWorkspacePath, workspacePath } from "../../shared/routes";
+const props = defineProps<{ demo?: boolean }>();
+const route = useRoute();
+const router = useRouter();
+const requestedChannel = computed(() => {
+  const parts = route.params.conversation;
+  return Array.isArray(parts) ? parts[1] || "" : typeof route.query.channel === "string" ? route.query.channel : "";
+});
 const runtime = useRuntimeConfig();
 const auth = useGitHubAuth();
-const preview = ref(
-  new URL(window.location.href).searchParams.get("preview") === "1",
-);
+const preview = ref(Boolean(props.demo));
 const login = computed(() => auth.viewer.value?.login || "");
 const savedRepositories = useLocalStorage<Record<string, string>>(
   "ghrew:workspaces:v2",
@@ -25,6 +31,8 @@ const repository = computed({
     // A server-selected workspace may have moved since this browser last visited.
     const selected =
       (auth.backend ? auth.activeMailbox.value?.repository : "") ||
+      (typeof route.params.organization === "string"
+        ? `${route.params.organization}/${typeof route.query.repo === "string" ? route.query.repo : savedRepositories.value[login.value]?.startsWith(route.params.organization + "/") ? savedRepositories.value[login.value]!.split("/")[1] : "ghrew-chat"}` : "") ||
       savedRepositories.value[login.value] ||
       runtime.public.defaultRepository ||
       "inchidev/ghrew";
@@ -83,8 +91,10 @@ const chat = useChat(
   repository,
   sources,
   vaultMailbox,
+  requestedChannel,
 );
 const authOpen = ref(false);
+const signingOut = ref(false);
 const workspaceOpen = ref(false);
 const ownOpen = ref(false);
 const setupOpen = ref(false);
@@ -119,7 +129,7 @@ async function ownWorkspace(config: MailboxConfig) {
 async function conversationCreated(channel?: Channel) {
   if (channel) {
     await chat.vaultChannelsQuery.refetch();
-    chat.selectedChannel.value = channel.id;
+    await selectChannel(channel.id);
   } else await chat.channelsQuery.refetch();
 }
 watch(auth.installer, (value) => {
@@ -252,26 +262,33 @@ const conversationMenu = computed(() =>
       ],
 );
 
-watch(
-  [auth.busy, isSignedIn, auth.mailboxWaiting],
-  ([busy, signedIn, waiting]) => {
-    if (!busy) authOpen.value = waiting || (!signedIn && !preview.value);
-    if (signedIn) {
-      preview.value = false;
-      const incoming = new URL(window.location.href).searchParams.get(
-        "workspace",
-      );
-      if (incoming) {
-        try {
-          repository.value = incoming;
-        } catch {
-          appError.value = "This workspace link is invalid.";
-        }
-      }
-    }
-  },
-  { immediate: true },
-);
+watch([auth.busy, isSignedIn], ([busy, signedIn]) => {
+  if (!busy && !signedIn && !preview.value && !signingOut.value)
+    void navigateTo({ path: "/login", query: { returnTo: route.fullPath } }, { replace: true });
+}, { immediate: true });
+function channelLocation(id: string) {
+  const item = chat.channels.value.find(value => value.id === id);
+  const path = preview.value ? `/demo/${item?.kind === "dm" ? "dm" : "c"}/${encodeURIComponent(id)}` : workspacePath(organization.value, id, item?.kind);
+  const query: Record<string, string> = {};
+  if (!preview.value && repository.value.split("/")[1] !== "ghrew-chat") query.repo = repository.value.split("/")[1]!;
+  if (typeof route.query.auth === "string" && !auth.backend) query.auth = route.query.auth;
+  return { path, query };
+}
+function selectChannel(id: string) { return router.push(channelLocation(id)); }
+watch(() => chat.channel.value, value => {
+  if (value && (preview.value || isSignedIn.value)) {
+    const location = channelLocation(value.id);
+    if (route.path !== location.path) void router.replace({ ...location, query: { ...location.query, ...(typeof route.query.thread === "string" ? { thread: route.query.thread } : {}) } });
+  }
+});
+function openThread(id: string) {
+  const query = { ...route.query };
+  if (id) query.thread = id; else delete query.thread;
+  void router.push({ path: route.path, query });
+}
+watch([() => route.query.thread, chat.messages, chat.messagesQuery.isPending], ([id]) => {
+  selectedThread.value = typeof id === "string" && chat.messages.value.some(message => message.id === id && !message.parentId) ? id : "";
+}, { immediate: true });
 watch(queryError, (error) => {
   if (error instanceof GitHubError && error.status === 401) auth.signOut();
 });
@@ -297,16 +314,11 @@ watch(selectedChannel, async () => {
   feed.value?.scrollTo({ top: feed.value.scrollHeight, behavior: "instant" });
 });
 
-function explore() {
-  preview.value = true;
-  authOpen.value = false;
-  const url = new URL(window.location.href);
-  url.searchParams.set("preview", "1");
-  history.replaceState(null, "", url);
-}
+function explore() { void navigateTo("/demo"); }
+function openLogin() { void navigateTo("/login"); }
 function openWorkspaces() {
   if (isSignedIn.value) workspaceOpen.value = true;
-  else authOpen.value = true;
+  else openLogin();
 }
 async function connect(value: string) {
   const owner = parseRepository(value)[0];
@@ -324,14 +336,10 @@ async function connect(value: string) {
     }
   }
   repository.value = value;
-  preview.value = false;
   appError.value = "";
-  const url = new URL(window.location.href);
-  url.searchParams.delete("preview");
-  url.searchParams.set("workspace", value);
-  if (auth.activeMailbox.value && !auth.backend)
-    url.searchParams.set("auth", auth.activeMailbox.value.repository);
-  history.replaceState(null, "", url);
+  const target = legacyWorkspacePath(value)!;
+  await navigateTo(auth.activeMailbox.value && !auth.backend ? target + (target.includes("?") ? "&" : "?") + "auth=" + encodeURIComponent(auth.activeMailbox.value.repository) : target);
+
 }
 async function installApp() {
   appError.value = "";
@@ -345,18 +353,13 @@ async function installApp() {
         : "Could not open GitHub App installation.";
   }
 }
-function signOut() {
-  preview.value = false;
-  auth.signOut();
-  authOpen.value = true;
+async function signOut() {
+  const returnTo = route.fullPath;
+  signingOut.value = true;
+  await auth.signOut();
+  await navigateTo({ path: "/login", query: { returnTo } }, { replace: true });
 }
-function shareWorkspace() {
-  const url = new URL(`${window.location.origin}${runtime.app.baseURL}`);
-  url.searchParams.set("workspace", repository.value);
-  if (auth.activeMailbox.value && !auth.backend)
-    url.searchParams.set("auth", auth.activeMailbox.value.repository);
-  void copy(url.href);
-}
+function shareWorkspace() { void copy(new URL(runtime.app.baseURL.replace(/\/$/, "") + route.fullPath, window.location.origin).href); }
 function exportPreview() {
   const blob = new Blob(
     [
@@ -390,29 +393,15 @@ function dayLabel(index: number) {
 </script>
 
 <template>
-  <AuthModal
-    v-if="!sample && !isSignedIn"
-    standalone
-    v-model:open="authOpen"
-    :backend="auth.backend"
-    :busy="auth.busy.value"
-    :error="auth.error.value"
-    :request-url="auth.requestUrl.value"
-    :device-code="auth.deviceCode.value"
-    :mailbox-repository="auth.mailboxRepository.value"
-    @sign-in="auth.signIn()"
-    @mailbox="chooseMailbox"
-    @cancel="auth.cancelMailbox"
-    @preview="explore"
-  />
+  <main v-if="!sample && !isSignedIn" class="auth-page"><p role="status">Opening your workspace…</p></main>
   <div
     v-else
     class="ghrew-shell"
     :class="{ 'has-thread': parent || threadPresent }"
   >
     <header class="app-toolbar" :inert="Boolean(parent) && isMobile">
-      <a :href="runtime.app.baseURL" class="brand" aria-label="Ghrew home"
-        ><BrandMark /><span>Ghrew</span></a
+      <NuxtLink to="/" class="brand" aria-label="Ghrew home"
+        ><BrandMark /><span>Ghrew</span></NuxtLink
       >
       <div ref="globalSearch" class="global-search">
         <UInput
@@ -529,7 +518,7 @@ function dayLabel(index: number) {
           variant="ghost"
           :class="{ active: selectedChannel === item.id }"
           :aria-current="selectedChannel === item.id ? 'page' : undefined"
-          @click="selectedChannel = item.id"
+          @click="selectChannel(item.id)"
         />
         <p v-if="!channels.length && !loading" class="sidebar-note">
           No channels yet.
@@ -546,7 +535,7 @@ function dayLabel(index: number) {
           variant="ghost"
           :class="{ active: selectedChannel === item.id }"
           :aria-current="selectedChannel === item.id ? 'page' : undefined"
-          @click="selectedChannel = item.id"
+          @click="selectChannel(item.id)"
         />
         <p v-if="!directChannels.length" class="sidebar-note">
           No direct messages yet
@@ -593,7 +582,7 @@ function dayLabel(index: number) {
             aria-label="Sign in with GitHub"
             color="neutral"
             variant="ghost"
-            @click="authOpen = true"
+            @click="openLogin"
           />
         </div>
       </div>
@@ -648,7 +637,7 @@ function dayLabel(index: number) {
             color="neutral"
             variant="outline"
             size="sm"
-            @click="authOpen = true"
+            @click="openLogin"
           />
           <UButton
             v-else
@@ -787,7 +776,7 @@ function dayLabel(index: number) {
             :message="message"
             :replies="chat.replyCount(message.id)"
             :selected="selectedThread === message.id"
-            @thread="selectedThread = $event"
+            @thread="openThread($event)"
           />
         </template>
       </div>
@@ -814,7 +803,7 @@ function dayLabel(index: number) {
             aria-label="Close thread"
             color="neutral"
             variant="ghost"
-            @click="selectedThread = ''"
+            @click="openThread('')"
           />
         </header>
         <div

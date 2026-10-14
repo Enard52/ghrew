@@ -45,7 +45,7 @@ test("a fresh deployment guides App registration without an issue mailbox or man
     }
     throw new Error("Unexpected API request " + path);
   });
-  await page.goto("/");
+  await page.goto("/login");
   await expect(page).toHaveURL(/\/create\/$/);
   await expect(
     page.getByRole("heading", { name: "1. Register your GitHub App" }),
@@ -117,7 +117,7 @@ test("an owner installs the deployment's App and creates a verified workspace", 
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Open your workspace" }),
-  ).toHaveAttribute("href", "/?workspace=team%2Fghrew-chat");
+  ).toHaveAttribute("href", "/w/team");
   expect(calls).toEqual([{ organization: "team" }]);
 });
 
@@ -169,6 +169,12 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
           json: {
             channels: [
               {
+                id: "direct-channel",
+                name: "Bob",
+                kind: "dm",
+                description: "",
+              },
+              {
                 id: "private-channel",
                 name: "Private room",
                 description: "Members only",
@@ -183,7 +189,7 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
             messages: [
               {
                 id: "m1",
-                channelId: "private-channel",
+                channelId: body.operation.conversation,
                 parentId: "",
                 author: "bob",
                 body: "Only permitted participants can see this.",
@@ -265,6 +271,16 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
   await expect(
     page.getByText("Only permitted participants can see this."),
   ).toBeVisible();
+  await expect(page).toHaveURL(/\/w\/team\/c\/private-channel$/);
+  await page.getByRole("button", { name: "# general", exact: true }).click();
+  await expect(page).toHaveURL(/\/w\/team\/c\/general$/);
+  await page.goBack();
+  await expect(
+    page.getByRole("heading", { name: "Private room", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Bob", exact: true }).click();
+  await expect(page).toHaveURL(/\/w\/team\/dm\/direct-channel$/);
+  await page.goBack();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "Private room", exact: true }),
@@ -311,7 +327,7 @@ test("signed-out entry has no hidden chat shell at phone, tablet and desktop wid
   });
   for (const width of [390, 712, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/");
+    await page.goto("/login");
     await expect(
       page.getByRole("button", { name: "Continue with GitHub" }),
     ).toBeEnabled();
@@ -338,4 +354,65 @@ test("signed-out entry has no hidden chat shell at phone, tablet and desktop wid
   await expect(
     page.getByText("Demo workspace. Changes stay in this browser."),
   ).toBeVisible();
+});
+
+test("the landing is public, and protected links preserve their destination at login", async ({
+  page,
+}) => {
+  const apiRequests: string[] = [];
+  await page.route("**/api/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    apiRequests.push(path);
+    if (path === "/api/config")
+      return route.fulfill({
+        json: { configured: true, setupAvailable: true, app, sandbox: "team" },
+      });
+    if (path === "/api/session")
+      return route.fulfill({ status: 401, json: { error: "Signed out" } });
+    if (path === "/api/auth/start")
+      return route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "GitHub sign-in started",
+      });
+    throw new Error("Unexpected API request " + path);
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("heading", { name: "Your crew, on GitHub." }),
+  ).toBeVisible();
+  expect(apiRequests).toEqual([]);
+  await page.getByRole("button", { name: "# building", exact: true }).click();
+  await expect(
+    page.getByText(
+      "The new homepage is ready for review. Please add feedback in a thread so we can keep track.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "# general", exact: true }).click();
+  await page.getByRole("link", { name: "2 replies", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Thread", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(
+    /\/demo\/c\/preview-general\?thread=preview-guide$/,
+  );
+  await page.goto("/");
+  await expect(page.locator(".ghrew-shell")).toHaveCount(0);
+  await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(
+    page.getByRole("button", { name: "Continue with GitHub" }),
+  ).toBeEnabled();
+  await page.goto("/w/team/c/private-channel?thread=m1");
+  await expect(page).toHaveURL(/\/login\?returnTo=/);
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe(
+    "/w/team/c/private-channel?thread=m1",
+  );
+  await expect(page.locator(".ghrew-shell")).toHaveCount(0);
+  await page.getByRole("button", { name: "Continue with GitHub" }).click();
+  await expect(page).toHaveURL(/\/api\/auth\/start\?returnTo=/);
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe(
+    "/w/team/c/private-channel?thread=m1",
+  );
 });
