@@ -5,18 +5,18 @@
 ```text
 Static Nuxt client on GitHub Pages
   ├── GitHub user token → public Discussions / Issues / Projects
-  └── encrypted requests → public gitwok-auth issues
+  └── encrypted requests → public ghrew-auth issues
                                 │ issue-opened workflow
                            GitHub Actions
                                 ├── Device Flow → encrypted user session
-                                └── workspace App → private gitwok-vault
+                                └── workspace App → private ghrew-vault
                                       membership + conversation checks
 ```
 
 An organization is the workspace. Public channels can be collected from its
 Discussions repositories. Every managed private channel and DM resides in the
-single `ORG/gitwok-vault`. The public source/template repository contains client
-code, not a workspace's conversations. Optional `gitwok-client` is a separate
+single `ORG/ghrew-vault`. The public source/template repository contains client
+code, not a workspace's conversations. Optional `ghrew-client` is a separate
 team-owned Pages deployment.
 
 ## Identity and mailbox
@@ -50,8 +50,8 @@ rotation invalidates in-flight requests. Do not describe this as E2EE.
 ## Vault authorization
 
 The Action signs an App JWT and mints a short-lived installation token scoped
-only to `gitwok-vault`, with Contents and Discussions write permissions. It checks
-that the repository is private, reads `.gitwok/members.json`, and audits all
+only to `ghrew-vault`, with Contents and Discussions write permissions. It checks
+that the repository is private, reads `.ghrew/members.json`, and audits all
 repository collaborators, including inherited organization/team grants. It
 fails closed if a reader is not a declared workspace administrator. Installation
 tokens are revoked after the operation and never returned to a browser.
@@ -63,7 +63,7 @@ read every conversation, including DMs. Other installed Apps may have access
 independently; administrators must restrict installations as well as human grants.
 
 The member directory uses immutable GitHub IDs. An administrator adds/removes
-GitWok members without granting them vault repository access. Each request checks
+Ghrew members without granting them vault repository access. Each request checks
 current membership, then conversation membership. Administrators may create
 private channels. A sandbox can explicitly enable `memberPrivateChannels` in
 its private member directory to let registered members create private groups. Members may create DMs with exactly one other current member;
@@ -73,7 +73,7 @@ received content cannot be recalled.
 
 Each vault Discussion stores conversation metadata. Each comment stores one
 message record with the authenticated sender and optional parent ID. GitHub
-attributes the underlying mutation to the workspace App; GitWok renders the
+attributes the underlying mutation to the workspace App; Ghrew renders the
 verified sender from the record. Guessed conversation/thread IDs do not bypass
 checks. All pages are fetched; malformed or incomplete scans fail. Responses
 are encrypted in chunks, bounded to 200 chunks of 5,000 characters.
@@ -101,13 +101,13 @@ the tab also clears it. A local CLI offers the same bootstrap using `gh`
 and a temporary loopback callback. It does not create a hosted service.
 
 The default workspace App is private: GitHub permits only members of its owning
-organization to authorize it. GitWok membership is an additional conversation
+organization to authorize it. Ghrew membership is an additional conversation
 access check, not an invitation to the GitHub organization. Paid organization
 plans may charge for those organization seats; private-vault separation does
 not waive GitHub billing. See [App visibility](https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/making-a-github-app-public-or-private).
 
-Enable Device Flow manually and install the workspace App on `gitwok-chat`,
-`gitwok-auth` and `gitwok-vault`. Revoke the Creator's access after setup if no
+Enable Device Flow manually and install the workspace App on `ghrew-chat`,
+`ghrew-auth` and `ghrew-vault`. Revoke the Creator's access after setup if no
 longer needed. A template is an independent copy, not a fork with automatic
 updates; Discussion data and Secrets are not copied.
 
@@ -145,7 +145,7 @@ endpoint is provided by Actions.
 
 ## Open sandbox and installer entry
 
-The shared demo belongs to `gitwok-sandbox`; `inchidev/gitwok` remains source code.
+The shared demo belongs to `ghrew-sandbox`; `inchidev/ghrew` remains source code.
 Its public GitHub App accepts authorization from people outside the organization.
 After sign-in the client submits an encrypted `join` operation once per session.
 Only `openRegistration: true` in the private member directory enables this

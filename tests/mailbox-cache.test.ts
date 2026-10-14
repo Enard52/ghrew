@@ -8,7 +8,7 @@ it("sees a newly published encrypted reply after an initially empty cacheable ma
   const server = await newMailboxKey();
   const pending = await prepareMailbox({
     version: 1,
-    repository: "acme/gitwok-auth",
+    repository: "acme/ghrew-auth",
     clientId: "workspace-app",
     appSlug: "workspace-app",
     publicKey: server.publicKey,

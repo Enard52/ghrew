@@ -39,7 +39,7 @@ test("threads persist replies and user-supplied HTML is displayed as text", asyn
     .getByRole("textbox", { name: "Message", exact: true })
     .fill("Room draft while reading a thread");
   await page.getByRole("button", { name: "2 replies", exact: true }).click();
-  const malicious = '<img src=x onerror="window.gitwokInjected=true">';
+  const malicious = '<img src=x onerror="window.ghrewInjected=true">';
   await page
     .getByRole("textbox", { name: "Reply", exact: true })
     .fill(malicious);
@@ -47,10 +47,10 @@ test("threads persist replies and user-supplied HTML is displayed as text", asyn
   await expect(
     page.locator(".thread-feed").getByText(malicious, { exact: true }),
   ).toBeVisible();
-  expect(await page.evaluate(() => "gitwokInjected" in window)).toBe(false);
+  expect(await page.evaluate(() => "ghrewInjected" in window)).toBe(false);
   await page.getByRole("button", { name: "Close thread" }).click();
   await expect(page.locator(".thread-panel")).toHaveCount(0);
-  await expect(page.locator(".gitwok-shell")).not.toHaveClass(/has-thread/);
+  await expect(page.locator(".ghrew-shell")).not.toHaveClass(/has-thread/);
   await expect(
     page.getByRole("textbox", { name: "Message", exact: true }),
   ).toHaveValue("Room draft while reading a thread");
@@ -98,7 +98,7 @@ test("entry opens a mini landing modal and an unavailable OAuth service fails cl
   await page.goto("/");
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(
-    page.getByText("Your team,", { exact: false }).first(),
+    page.getByText("Your crew,", { exact: false }).first(),
   ).toBeVisible();
   await expect(page.locator("input[type=password]")).toHaveCount(0);
   await page.getByRole("button", { name: "Continue with GitHub" }).click();

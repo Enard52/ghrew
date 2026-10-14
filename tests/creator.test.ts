@@ -71,7 +71,7 @@ describe("workspace installer", () => {
           return Response.json({ role: "admin", state: "active" });
         if (url.endsWith("/orgs/acme"))
           return Response.json({ default_repository_permission: "none" });
-        if (url.endsWith("/.gitwok-installation.json"))
+        if (url.endsWith("/.ghrew-installation.json"))
           return Response.json({
             content: Buffer.from(
               JSON.stringify({
@@ -119,7 +119,7 @@ describe("own client deployment", () => {
     );
     const waiting = waitForPagesDeployment(
       "token",
-      "acme/gitwok-client",
+      "acme/ghrew-client",
       "new",
     );
     await vi.advanceTimersByTimeAsync(2000);
@@ -138,7 +138,7 @@ describe("own client deployment", () => {
       ),
     );
     await expect(
-      waitForPagesDeployment("token", "acme/gitwok-client", "new"),
+      waitForPagesDeployment("token", "acme/ghrew-client", "new"),
     ).rejects.toThrow("Pages deployment failed");
   });
 });

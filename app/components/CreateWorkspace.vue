@@ -51,7 +51,7 @@ onMounted(async () => {
       ? `https://github.com/apps/${config.creatorAppSlug}/installations/new`
       : "";
     const stored = JSON.parse(
-      sessionStorage.getItem("gitwok:setup-config") || "null",
+      sessionStorage.getItem("ghrew:setup-config") || "null",
     );
     if (stored?.config && stored?.plan) {
       configured.value = stored.config;
@@ -83,7 +83,7 @@ async function authorize() {
 async function testSignIn(config: MailboxConfig) {
   configured.value = config;
   const stored = JSON.parse(
-    sessionStorage.getItem("gitwok:setup-config") || "null",
+    sessionStorage.getItem("ghrew:setup-config") || "null",
   );
   clientUrl.value = stored?.plan.clientUrl || runtime.app.baseURL;
   await auth.selectMailbox(config.repository);
@@ -109,7 +109,7 @@ async function verify() {
       );
     const repository = await adminApi(
       auth.token.value,
-      `/repos/${configured.value.repository.split("/")[0]}/gitwok-chat`,
+      `/repos/${configured.value.repository.split("/")[0]}/ghrew-chat`,
     );
     if (repository.private || !repository.has_discussions)
       throw new Error("The public chat repository is not ready.");
@@ -129,7 +129,7 @@ const workspaceUrl = computed(() => {
     url.searchParams.set("auth", configured.value.repository);
     url.searchParams.set(
       "workspace",
-      `${configured.value.repository.split("/")[0]}/gitwok-chat`,
+      `${configured.value.repository.split("/")[0]}/ghrew-chat`,
     );
   }
   return url.href;
@@ -140,7 +140,7 @@ const workspaceUrl = computed(() => {
     <div class="max-w-2xl mx-auto space-y-8">
       <header class="space-y-4">
         <NuxtLink to="/" class="inline-flex items-center gap-2 text-muted"
-          ><BrandMark class="size-8" /> GitWok · back to chat</NuxtLink
+          ><BrandMark class="size-8" /> Ghrew · back to chat</NuxtLink
         >
         <h1 class="text-3xl sm:text-4xl font-bold">
           Create your own workspace
@@ -189,7 +189,7 @@ const workspaceUrl = computed(() => {
             size="lg"
           />
           <p class="text-muted text-sm">
-            You can revoke GitWok Creator after checking your workspace.
+            You can revoke Ghrew Creator after checking your workspace.
           </p>
         </template>
         <template v-else-if="checking">
@@ -202,7 +202,7 @@ const workspaceUrl = computed(() => {
           <h2 class="text-xl font-semibold">Verify your workspace</h2>
           <p>
             Enable Device Flow on your workspace App and install it only on
-            gitwok-chat, gitwok-auth and gitwok-vault.
+            ghrew-chat, ghrew-auth and ghrew-vault.
           </p>
           <UButton
             :to="`https://github.com/organizations/${configured?.repository.split('/')[0]}/settings/apps/${configured?.appSlug}`"

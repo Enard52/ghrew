@@ -1,46 +1,46 @@
-# Host your own GitWok
+# Host your own Ghrew
 
 ## GitHub-only workspace
 
 Use a GitHub organization you own and Node.js 24 with the authenticated `gh` CLI.
 Set organization **Settings → Member privileges → Base permissions → None**.
-Review the effect on existing repositories first; GitWok refuses to change this
+Review the effect on existing repositories first; Ghrew refuses to change this
 organization-wide setting automatically.
 
 ```sh
-git clone https://github.com/inchidev/gitwok.git
-cd gitwok
+git clone https://github.com/inchidev/ghrew.git
+cd ghrew
 npm ci
 npm run setup -- --organization YOUR_ORG --own-client
 ```
 
-The installer creates public `gitwok-chat` and `gitwok-auth`, and one private
-`gitwok-vault`. It does not invite users to the vault. Do not assign organization
+The installer creates public `ghrew-chat` and `ghrew-auth`, and one private
+`ghrew-vault`. It does not invite users to the vault. Do not assign organization
 teams, ordinary collaborators or unrelated Apps to that repository. Organization
 owners retain GitHub's inherent administrative access.
 
 Open the temporary local URL printed by the installer. Review and create the
 workspace GitHub App on GitHub. Its generated private key and a mailbox encryption
-key are stored in `gitwok-auth` Actions Secrets, never in public files. Keep the
+key are stored in `ghrew-auth` Actions Secrets, never in public files. Keep the
 installer running until it reports completion; interrupted callbacks can be
 retried while that process is running.
 
 Follow the printed links to:
 
 1. Enable **Device Flow** in the workspace App settings. Keep expiring user tokens enabled.
-2. Install the App only on `gitwok-chat`, `gitwok-auth` and `gitwok-vault`.
+2. Install the App only on `ghrew-chat`, `ghrew-auth` and `ghrew-vault`.
 3. Open the workspace URL and complete sign-in through a prepared issue and GitHub's device approval.
-4. Invite participants to the GitHub organization: its private workspace App can only be authorized by organization members. Then add them to GitWok by username, create a private channel, and verify access from a member's account before treating the setup as complete.
+4. Invite participants to the GitHub organization: its private workspace App can only be authorized by organization members. Then add them to Ghrew by username, create a private channel, and verify access from a member's account before treating the setup as complete.
 
 The App requests Discussions, Issues and Contents write, Metadata read, pull
 requests read, and organization Projects read. Private repository Contents is
 used for membership; Discussions is used for conversations. No OAuth client
 secret is needed in mailbox mode.
 
-With `--own-client`, a public `gitwok-client` is generated from the GitWok template.
-The installer writes public `gitwok-client.json`, configures Actions
+With `--own-client`, a public `ghrew-client` is generated from the Ghrew template.
+The installer writes public `ghrew-client.json`, configures Actions
 as the Pages build source, and dispatches the included Pages workflow. Without
-that flag, the workspace uses the shared client at `gitwok.inchi.dev`. Teams
+that flag, the workspace uses the shared client at `ghrew.inchi.dev`. Teams
 must trust the JavaScript served by whichever client they use.
 
 ## Browser provisioning and the Creator App
@@ -75,10 +75,10 @@ For a reviewed client copy, set repository Actions variables:
 
 | Variable             | Example                |
 | -------------------- | ---------------------- |
-| `AUTH_REPOSITORY`    | `YOUR_ORG/gitwok-auth` |
-| `DEFAULT_REPOSITORY` | `YOUR_ORG/gitwok-chat` |
+| `AUTH_REPOSITORY`    | `YOUR_ORG/ghrew-auth` |
+| `DEFAULT_REPOSITORY` | `YOUR_ORG/ghrew-chat` |
 
-Enable GitHub Actions as the Pages source. Run **Deploy GitWok client**. Leave
+Enable GitHub Actions as the Pages source. Run **Deploy Ghrew client**. Leave
 `custom_domain` blank for the repository Pages path, or supply your configured
 custom domain. The workflow generates static `.output/public`; no credentials
 belong in Pages variables or build output. Local development uses the equivalent
@@ -98,7 +98,7 @@ This mode does not provide the administrator-only vault.
 
 Templates do not auto-sync. Review upstream changes, apply them to your own
 client and auth workflow sources, run checks, then deploy. Preserve your own
-`gitwok-auth.json` and Secrets; bootstrap scripts deliberately refuse accidental
+`ghrew-auth.json` and Secrets; bootstrap scripts deliberately refuse accidental
 key rotation or adoption of unrelated repositories. Keep a protected backup of
 your App and mailbox keys outside the public repositories.
 

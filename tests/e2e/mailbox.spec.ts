@@ -16,18 +16,18 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
   const server = await newMailboxKey();
   const config = {
     version: 1,
-    repository: "acme/gitwok-auth",
+    repository: "acme/ghrew-auth",
     clientId: "test-app",
     appSlug: "test-app",
     publicKey: server.publicKey,
-    vault: "acme/gitwok-vault",
+    vault: "acme/ghrew-vault",
     appId: "123",
     openRegistration: true,
   };
   await page.addInitScript(() => {
-    localStorage.setItem("gitwok:auth-repository:v1", "acme/gitwok-auth");
+    localStorage.setItem("ghrew:auth-repository:v1", "acme/ghrew-auth");
     localStorage.setItem(
-      "gitwok:workspaces:v2",
+      "ghrew:workspaces:v2",
       JSON.stringify({ alice: "acme/legacy-chat" }),
     );
   });
@@ -50,7 +50,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
   const browserUrls: string[] = [];
   page.on("request", (r) => browserUrls.push(r.url()));
   await context.route(
-    "https://github.com/acme/gitwok-auth/issues/new**",
+    "https://github.com/acme/ghrew-auth/issues/new**",
     async (route) => {
       const url = new URL(route.request().url());
       request = parseMailboxRequest(
@@ -73,7 +73,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
     const url = new URL(route.request().url()),
       path = url.pathname;
     const respond = (value: unknown) => route.fulfill({ json: value });
-    if (path === "/repos/acme/gitwok-auth/contents/gitwok-auth.json")
+    if (path === "/repos/acme/ghrew-auth/contents/ghrew-auth.json")
       return respond(config);
     if (path === "/user") return respond({ id: 1, login: "alice" });
     if (path === "/user/installations")
@@ -84,26 +84,26 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
         repositories: [
           {
             id: 1,
-            full_name: "acme/gitwok-chat",
+            full_name: "acme/ghrew-chat",
             private: false,
             has_discussions: true,
           },
           {
             id: 2,
-            full_name: "acme/gitwok-vault",
+            full_name: "acme/ghrew-vault",
             private: true,
             has_discussions: true,
           },
         ],
       });
     if (
-      path === "/repos/acme/gitwok-auth/issues" &&
+      path === "/repos/acme/ghrew-auth/issues" &&
       route.request().method() === "GET"
     )
       return respond(
-        request ? [{ number: 1, title: "GitWok auth " + request.id }] : [],
+        request ? [{ number: 1, title: "Ghrew auth " + request.id }] : [],
       );
-    if (path === "/repos/acme/gitwok-auth/issues/1/comments") {
+    if (path === "/repos/acme/ghrew-auth/issues/1/comments") {
       const values = request
         ? [
             {
@@ -152,7 +152,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
       return respond(values);
     }
     if (
-      path === "/repos/acme/gitwok-auth/issues" &&
+      path === "/repos/acme/ghrew-auth/issues" &&
       route.request().method() === "POST"
     ) {
       const body = route.request().postDataJSON();
@@ -236,7 +236,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
                     id: "D_public",
                     title: "general",
                     body: "Public conversation",
-                    url: "https://github.com/acme/gitwok-chat/discussions/1",
+                    url: "https://github.com/acme/ghrew-chat/discussions/1",
                   },
                 ],
                 pageInfo: { hasNextPage: false, endCursor: null },
@@ -283,7 +283,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
     page.getByRole("button", { name: "🔒 Leadership", exact: true }),
   ).toBeVisible({ timeout: 30_000 });
   await expect(
-    page.getByRole("button", { name: "acme acme/gitwok-chat", exact: true }),
+    page.getByRole("button", { name: "acme acme/ghrew-chat", exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "🔒 Leadership", exact: true })
@@ -314,7 +314,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
   expect(publicBodies.join()).not.toContain("user-session-token");
   expect(
     browserUrls.some((url) =>
-      new URL(url).pathname.startsWith("/repos/acme/gitwok-vault"),
+      new URL(url).pathname.startsWith("/repos/acme/ghrew-vault"),
     ),
   ).toBe(false);
   expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
@@ -330,9 +330,9 @@ test("a legacy broker session cannot carry over into a configured mailbox", asyn
   const server = await newMailboxKey();
   let reusedLegacyToken = false;
   await page.addInitScript(() => {
-    localStorage.setItem("gitwok:auth-repository:v1", "acme/gitwok-auth");
+    localStorage.setItem("ghrew:auth-repository:v1", "acme/ghrew-auth");
     sessionStorage.setItem(
-      "gitwok:github-session:v1",
+      "ghrew:github-session:v1",
       JSON.stringify({
         accessToken: "legacy-broker-token",
         expiresAt: Date.now() + 600000,
@@ -347,7 +347,7 @@ test("a legacy broker session cannot carry over into a configured mailbox", asyn
     return route.fulfill({
       json: {
         version: 1,
-        repository: "acme/gitwok-auth",
+        repository: "acme/ghrew-auth",
         clientId: "app",
         appSlug: "app",
         publicKey: server.publicKey,
@@ -361,7 +361,7 @@ test("a legacy broker session cannot carry over into a configured mailbox", asyn
   expect(reusedLegacyToken).toBe(false);
   expect(
     await page.evaluate(() =>
-      sessionStorage.getItem("gitwok:github-session:v1"),
+      sessionStorage.getItem("ghrew:github-session:v1"),
     ),
   ).toBeNull();
 });

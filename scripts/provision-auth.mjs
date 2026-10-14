@@ -4,12 +4,12 @@ import { execFileSync } from "node:child_process";
 import { newMailboxKey } from "../shared/mailbox.ts";
 const [repository, clientId, appSlug] = process.argv.slice(2);
 if (
-  !/^[\w-]+\/gitwok-auth$/.test(repository || "") ||
+  !/^[\w-]+\/ghrew-auth$/.test(repository || "") ||
   !/^[\w.]+$/.test(clientId || "") ||
   !/^[\w-]+$/.test(appSlug || "")
 )
   throw new Error(
-    "Usage: node scripts/provision-auth.mjs OWNER/gitwok-auth CLIENT_ID APP_SLUG",
+    "Usage: node scripts/provision-auth.mjs OWNER/ghrew-auth CLIENT_ID APP_SLUG",
   );
 const gh = (...args) =>
   execFileSync("gh", args, {
@@ -48,18 +48,18 @@ for (const [source, target] of [
 ])
   await writeFile(`${directory}/${target}`, await readFile(source));
 await writeFile(
-  `${directory}/gitwok-auth.json`,
+  `${directory}/ghrew-auth.json`,
   JSON.stringify(config, null, 2) + "\n",
 );
 await writeFile(
   `${directory}/README.md`,
-  "# GitWok authentication\n\nGitHub-only Device Flow broker. Requests contain only an ephemeral public key and random challenge. Device codes and session tokens are encrypted for that browser. GitHub account names and sign-in times are public metadata.\n\nThe private encryption key belongs in the MAILBOX_PRIVATE_KEY Actions Secret. Do not put it in this repository. Enable Device Flow on the configured GitHub App.\n",
+  "# Ghrew authentication\n\nGitHub-only Device Flow broker. Requests contain only an ephemeral public key and random challenge. Device codes and session tokens are encrypted for that browser. GitHub account names and sign-in times are public metadata.\n\nThe private encryption key belongs in the MAILBOX_PRIVATE_KEY Actions Secret. Do not put it in this repository. Enable Device Flow on the configured GitHub App.\n",
 );
 execFileSync("git", ["init", "-b", "main"], { cwd: directory, stdio: "pipe" });
 execFileSync("git", ["add", "."], { cwd: directory, stdio: "pipe" });
 execFileSync(
   "git",
-  ["commit", "-m", "Initialize encrypted GitWok auth mailbox"],
+  ["commit", "-m", "Initialize encrypted Ghrew auth mailbox"],
   { cwd: directory, stdio: "pipe" },
 );
 gh(
@@ -68,7 +68,7 @@ gh(
   repository,
   "--public",
   "--description",
-  "GitWok encrypted sign-in mailbox",
+  "Ghrew encrypted sign-in mailbox",
   "--source",
   directory,
 );

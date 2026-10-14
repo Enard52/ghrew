@@ -23,7 +23,7 @@ const busy = ref(false);
 const configured = shallowRef<MailboxConfig | null>(null);
 const clientUrl = computed(() =>
   ownClient.value
-    ? `https://${organization.value}.github.io/gitwok-client/`
+    ? `https://${organization.value}.github.io/ghrew-client/`
     : `${window.location.origin}${useRuntimeConfig().app.baseURL}`,
 );
 const appSettings = computed(() =>
@@ -90,11 +90,11 @@ watch(
   () => [props.token, props.userId] as const,
   async ([token, userId]) => {
     if (!token || !userId || completing) return;
-    const saved = sessionStorage.getItem("gitwok:app-manifest-code");
+    const saved = sessionStorage.getItem("ghrew:app-manifest-code");
     if (!saved) {
       try {
         const stored = JSON.parse(
-          sessionStorage.getItem("gitwok:setup-config") || "null",
+          sessionStorage.getItem("ghrew:setup-config") || "null",
         );
         if (stored?.plan.administrator.id === userId) {
           configured.value = stored.config;
@@ -128,9 +128,9 @@ watch(
         useRuntimeConfig().app.baseURL,
         (value) => (status.value = value),
       );
-      sessionStorage.removeItem("gitwok:app-manifest-code");
+      sessionStorage.removeItem("ghrew:app-manifest-code");
       sessionStorage.setItem(
-        "gitwok:setup-config",
+        "ghrew:setup-config",
         JSON.stringify({ config: configured.value, plan }),
       );
       const clean = new URL(window.location.href);
@@ -176,7 +176,7 @@ watch(
       <p>
         Finish two settings on GitHub: enable
         <strong>Device Flow</strong> on your App, then install it on
-        <strong>gitwok-chat, gitwok-auth and gitwok-vault</strong>.
+        <strong>ghrew-chat, ghrew-auth and ghrew-vault</strong>.
       </p>
       <UButton
         :to="appSettings"
@@ -194,13 +194,13 @@ watch(
       />
       <UButton label="Test my workspace sign-in" block @click="useWorkspace" />
       <p class="text-muted text-sm">
-        After checking your own sign-in, revoke GitWok Creator in GitHub
+        After checking your own sign-in, revoke Ghrew Creator in GitHub
         settings. Your workspace does not need its access afterwards.
       </p>
     </template>
     <template v-else-if="!installer">
       <p>
-        GitWok Creator needs temporary permission to create repositories,
+        Ghrew Creator needs temporary permission to create repositories,
         configure Actions and save your workspace’s keys in GitHub Secrets. Your
         runtime App will be separate.
       </p>
@@ -209,11 +209,11 @@ watch(
         :to="creatorUrl"
         target="_blank"
         rel="noopener noreferrer"
-        label="Install GitWok Creator"
+        label="Install Ghrew Creator"
         variant="outline"
       />
       <UButton
-        label="Authorize GitWok Creator"
+        label="Authorize Ghrew Creator"
         block
         :disabled="!creatorUrl"
         @click="emit('authorize')"
@@ -231,7 +231,7 @@ watch(
     >
       <UFormField
         label="GitHub organization"
-        description="You must own this organization and install GitWok Creator there."
+        description="You must own this organization and install Ghrew Creator there."
         required
         ><UInput
           v-model="organization"
@@ -241,14 +241,14 @@ watch(
       /></UFormField>
       <div class="space-y-2 text-sm">
         <p>
-          <strong>gitwok-chat</strong> — public channels, visible on GitHub.
+          <strong>ghrew-chat</strong> — public channels, visible on GitHub.
         </p>
         <p>
-          <strong>gitwok-vault</strong> — one private repository, administrators
+          <strong>ghrew-vault</strong> — one private repository, administrators
           only.
         </p>
         <p>
-          <strong>gitwok-auth</strong> — public mailbox with encrypted requests
+          <strong>ghrew-auth</strong> — public mailbox with encrypted requests
           and responses.
         </p>
       </div>
@@ -258,7 +258,7 @@ watch(
         :disabled="busy"
       />
       <p class="text-muted text-sm">
-        With the shared site you trust GitWok’s JavaScript with your session and
+        With the shared site you trust Ghrew’s JavaScript with your session and
         messages. Your own Pages copy lets your team review code and control
         updates.
       </p>

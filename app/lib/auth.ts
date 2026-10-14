@@ -1,7 +1,7 @@
 import { pendingOAuthSchema, sessionSchema } from "../../shared/auth";
 
-export const SESSION_KEY = "gitwok:github-session:v1";
-export const OAUTH_KEY = "gitwok:oauth-pending:v1";
+export const SESSION_KEY = "ghrew:github-session:v1";
+export const OAUTH_KEY = "ghrew:oauth-pending:v1";
 
 function randomString(length = 32): string {
   const bytes = crypto.getRandomValues(new Uint8Array(length));

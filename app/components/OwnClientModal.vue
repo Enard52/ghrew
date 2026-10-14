@@ -5,7 +5,7 @@ const open = defineModel<boolean>("open", { required: true });
 <template>
   <UModal
     v-model:open="open"
-    title="A GitWok of your own"
+    title="A Ghrew of your own"
     description="Same conversations. A client your team controls."
   >
     <template #body>
@@ -13,10 +13,10 @@ const open = defineModel<boolean>("open", { required: true });
         <BrandMark />
         <p>
           Your workspace lives in your GitHub organization. You can also host
-          the GitWok interface on your own GitHub Pages.
+          the Ghrew interface on your own GitHub Pages.
         </p>
         <ol>
-          <li>Create a client repository from the GitWok template.</li>
+          <li>Create a client repository from the Ghrew template.</li>
           <li>
             Run the workspace installer with --own-client and register your
             workspace App.
@@ -27,20 +27,20 @@ const open = defineModel<boolean>("open", { required: true });
           </li>
         </ol>
         <p class="text-muted">
-          Public channels live in gitwok-chat; all private channels and DMs
-          share one administrator-only gitwok-vault. Updates are reviewed
+          Public channels live in ghrew-chat; all private channels and DMs
+          share one administrator-only ghrew-vault. Updates are reviewed
           changes to your copy; a template does not update itself.
         </p>
         <UButton
-          label="Use the GitWok template"
+          label="Use the Ghrew template"
           icon="i-lucide-github"
-          to="https://github.com/inchidev/gitwok/generate"
+          to="https://github.com/inchidev/ghrew/generate"
           target="_blank"
           rel="noopener noreferrer"
         />
         <UButton
           label="Read the hosting guide"
-          to="https://github.com/inchidev/gitwok/blob/main/docs/self-hosting.md"
+          to="https://github.com/inchidev/ghrew/blob/main/docs/self-hosting.md"
           target="_blank"
           rel="noopener noreferrer"
           color="neutral"

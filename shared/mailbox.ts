@@ -39,9 +39,9 @@ export type MailboxReply =
   | { id: string; kind: "probe"; login: string; userId: number }
   | { id: string; kind: "result"; part: number; total: number; data: string }
   | { id: string; kind: "error"; message: string };
-export const REQUEST_PREFIX = "GitWok auth ";
-export const VAULT_PREFIX = "GitWok vault ";
-export const REPLY_PREFIX = "gitwok-reply-v1:";
+export const REQUEST_PREFIX = "Ghrew auth ";
+export const VAULT_PREFIX = "Ghrew vault ";
+export const REPLY_PREFIX = "ghrew-reply-v1:";
 const algorithm = { name: "ECDH", namedCurve: "P-256" };
 const encoder = new TextEncoder();
 function encode(bytes: Uint8Array): string {
@@ -102,7 +102,7 @@ export async function seal(
     {
       name: "AES-GCM",
       iv,
-      additionalData: encoder.encode(`gitwok-mailbox-v1:${id}`),
+      additionalData: encoder.encode(`ghrew-mailbox-v1:${id}`),
     },
     await sharedKey(privateKey, recipient),
     encoder.encode(JSON.stringify(value)),
@@ -126,7 +126,7 @@ export async function unseal(
     {
       name: "AES-GCM",
       iv: decode(value.iv),
-      additionalData: encoder.encode(`gitwok-mailbox-v1:${id}`),
+      additionalData: encoder.encode(`ghrew-mailbox-v1:${id}`),
     },
     await sharedKey(privateKey, expectedPeer),
     decode(value.data),
@@ -134,7 +134,7 @@ export async function unseal(
   return JSON.parse(new TextDecoder().decode(data));
 }
 export function requestBody(request: MailboxRequest) {
-  return `GitWok sign-in request. Do not edit this block.\n\n\`\`\`json\n${JSON.stringify(request)}\n\`\`\``;
+  return `Ghrew sign-in request. Do not edit this block.\n\n\`\`\`json\n${JSON.stringify(request)}\n\`\`\``;
 }
 export function parseMailboxRequest(
   title: string,

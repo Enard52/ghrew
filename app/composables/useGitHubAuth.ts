@@ -32,7 +32,7 @@ export function useGitHubAuth() {
   const busy = ref(true);
   const installUrl = ref("");
   const mailboxRepository = ref(
-    localStorage.getItem("gitwok:auth-repository:v1") ||
+    localStorage.getItem("ghrew:auth-repository:v1") ||
       config.public.authRepository,
   );
   const activeMailbox = shallowRef<MailboxConfig | null>(null);
@@ -50,7 +50,7 @@ export function useGitHubAuth() {
     pendingMailbox.value = null;
     deviceCode.value = "";
     mailboxWaiting.value = false;
-    sessionStorage.removeItem("gitwok:mailbox-pending:v1");
+    sessionStorage.removeItem("ghrew:mailbox-pending:v1");
   }
   async function pollMailbox(pending: PendingMailbox, isInstaller = false) {
     const controller = new AbortController();
@@ -94,7 +94,7 @@ export function useGitHubAuth() {
     signOut();
     mailboxRepository.value = value.repository;
     activeMailbox.value = value;
-    localStorage.setItem("gitwok:auth-repository:v1", value.repository);
+    localStorage.setItem("ghrew:auth-repository:v1", value.repository);
   }
   const now = useNow({
     scheduler: (callback) => useIntervalFn(callback, 30_000),
@@ -154,7 +154,7 @@ export function useGitHubAuth() {
         signOut();
         mailboxRepository.value = incoming.repository;
         activeMailbox.value = incoming;
-        localStorage.setItem("gitwok:auth-repository:v1", incoming.repository);
+        localStorage.setItem("ghrew:auth-repository:v1", incoming.repository);
       }
       // Remove OAuth parameters before performing network requests or rendering external links.
       if (url.searchParams.has("code") || url.searchParams.has("error")) {
@@ -170,7 +170,7 @@ export function useGitHubAuth() {
         history.replaceState(null, "", clean);
         if (url.searchParams.has("setup") && url.searchParams.has("code")) {
           const plan = JSON.parse(
-            sessionStorage.getItem("gitwok:setup:v1") || "null",
+            sessionStorage.getItem("ghrew:setup:v1") || "null",
           );
           if (
             !plan ||
@@ -179,7 +179,7 @@ export function useGitHubAuth() {
           )
             throw new Error("This workspace setup could not be verified.");
           sessionStorage.setItem(
-            "gitwok:app-manifest-code",
+            "ghrew:app-manifest-code",
             JSON.stringify({
               code: url.searchParams.get("code"),
               nonce: plan.registrationState,
@@ -226,7 +226,7 @@ export function useGitHubAuth() {
         );
       await loadViewer();
       if (!session.value) {
-        const saved = sessionStorage.getItem("gitwok:mailbox-pending:v1");
+        const saved = sessionStorage.getItem("ghrew:mailbox-pending:v1");
         if (saved) {
           try {
             const pending = JSON.parse(saved) as PendingMailbox;
@@ -262,13 +262,13 @@ export function useGitHubAuth() {
         const value = await mailboxConfig(mailboxRepository.value);
         if (isInstaller && !value.creatorClientId)
           throw new Error(
-            "The GitWok Creator App has not been configured for this mailbox.",
+            "The Ghrew Creator App has not been configured for this mailbox.",
           );
         activeMailbox.value = value;
         const pending = await prepareMailbox(value, undefined, isInstaller);
         pendingMailbox.value = pending;
         sessionStorage.setItem(
-          "gitwok:mailbox-pending:v1",
+          "ghrew:mailbox-pending:v1",
           JSON.stringify(pending),
         );
         busy.value = false;
@@ -277,7 +277,7 @@ export function useGitHubAuth() {
       }
       if (isInstaller)
         throw new Error(
-          "Configure the GitHub-only mailbox to authorize GitWok Creator.",
+          "Configure the GitHub-only mailbox to authorize Ghrew Creator.",
         );
       const value = await oauthConfig();
       window.location.assign(

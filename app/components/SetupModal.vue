@@ -13,7 +13,7 @@ const emit = defineEmits<{ authorize: []; ready: [config: MailboxConfig] }>();
 <template>
   <UModal
     v-model:open="open"
-    title="Create your GitWok"
+    title="Create your Ghrew"
     description="Your organization owns its repositories and App."
   >
     <template #body

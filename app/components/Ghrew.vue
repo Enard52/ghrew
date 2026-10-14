@@ -17,7 +17,7 @@ const preview = ref(
 );
 const login = computed(() => auth.viewer.value?.login || "");
 const savedRepositories = useLocalStorage<Record<string, string>>(
-  "gitwok:workspaces:v2",
+  "ghrew:workspaces:v2",
   {},
 );
 const repository = computed({
@@ -25,13 +25,13 @@ const repository = computed({
     const selected =
       savedRepositories.value[login.value] ||
       runtime.public.defaultRepository ||
-      "inchidev/gitwok";
+      "inchidev/ghrew";
     const owner = selected.split("/")[0]!;
     const mailboxOwner = auth.activeMailbox.value?.repository.split("/")[0];
     // Managed workspaces use a canonical public repository even after a legacy saved preference.
     return auth.activeMailbox.value?.vault &&
       mailboxOwner?.toLowerCase() === owner.toLowerCase()
-      ? `${owner}/gitwok-chat`
+      ? `${owner}/ghrew-chat`
       : selected;
   },
   set: (value) => {
@@ -59,12 +59,12 @@ const sources = computed(() => {
         r.full_name
           .toLowerCase()
           .startsWith(organization.value.toLowerCase() + "/") &&
-        !["gitwok-vault", "gitwok-auth"].includes(r.full_name.split("/")[1]!),
+        !["ghrew-vault", "ghrew-auth"].includes(r.full_name.split("/")[1]!),
     )
     .map((r) => r.full_name);
   return [...new Set([...all, repository.value])].filter(
     (value) =>
-      !value.endsWith("/gitwok-vault") && !value.endsWith("/gitwok-auth"),
+      !value.endsWith("/ghrew-vault") && !value.endsWith("/ghrew-auth"),
   );
 });
 const vaultMailbox = computed(() =>
@@ -112,7 +112,7 @@ async function chooseMailbox(value: string) {
 }
 async function ownWorkspace(config: MailboxConfig) {
   await chooseMailbox(config.repository);
-  await connect(`${config.repository.split("/")[0]}/gitwok-chat`);
+  await connect(`${config.repository.split("/")[0]}/ghrew-chat`);
 }
 async function conversationCreated(channel?: Channel) {
   if (channel) {
@@ -191,7 +191,7 @@ const conversationMenu = computed(() =>
           onSelect: exportPreview,
         },
         {
-          label: "Host your own GitWok",
+          label: "Host your own Ghrew",
           icon: "i-lucide-sprout",
           onSelect: () => {
             ownOpen.value = true;
@@ -217,7 +217,7 @@ const conversationMenu = computed(() =>
           },
         },
         {
-          label: "Host your own GitWok",
+          label: "Host your own Ghrew",
           icon: "i-lucide-sprout",
           onSelect: () => {
             ownOpen.value = true;
@@ -290,10 +290,10 @@ async function connect(value: string) {
       auth.activeMailbox.value.repository.split("/")[0]!.toLowerCase()
   ) {
     try {
-      await auth.selectMailbox(`${owner}/gitwok-auth`);
+      await auth.selectMailbox(`${owner}/ghrew-auth`);
     } catch {
       appError.value =
-        "Connect this organization’s gitwok-auth before opening its workspace.";
+        "Connect this organization’s ghrew-auth before opening its workspace.";
       return;
     }
   }
@@ -345,7 +345,7 @@ function exportPreview() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "gitwok-preview-channel.json";
+  link.download = "ghrew-preview-channel.json";
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -364,15 +364,15 @@ function dayLabel(index: number) {
 </script>
 
 <template>
-  <div class="gitwok-shell" :class="{ 'has-thread': parent || threadPresent }">
+  <div class="ghrew-shell" :class="{ 'has-thread': parent || threadPresent }">
     <aside
       class="channel-sidebar"
       :class="{ 'is-open': channelsOpen }"
       aria-label="Workspace navigation"
     >
       <div class="sidebar-top">
-        <a :href="runtime.app.baseURL" class="brand" aria-label="GitWok home"
-          ><BrandMark /><span>GitWok</span></a
+        <a :href="runtime.app.baseURL" class="brand" aria-label="Ghrew home"
+          ><BrandMark /><span>Ghrew</span></a
         >
         <UButton
           icon="i-lucide-x"
@@ -421,7 +421,7 @@ function dayLabel(index: number) {
         <button class="own-client" @click="ownOpen = true">
           <UIcon name="i-lucide-sprout" /><span
             ><strong>Make yourself at home</strong
-            ><small>Put GitWok on your own GitHub</small></span
+            ><small>Put Ghrew on your own GitHub</small></span
           ><UIcon name="i-lucide-arrow-up-right" />
         </button>
         <div class="user-bar">
@@ -735,7 +735,7 @@ function dayLabel(index: number) {
       </aside>
     </Transition>
     <AuthModal
-      :sandbox="auth.mailboxRepository.value === 'gitwok-sandbox/gitwok-auth'"
+      :sandbox="auth.mailboxRepository.value === 'ghrew-sandbox/ghrew-auth'"
       v-model:open="authOpen"
       :busy="auth.busy.value"
       :error="auth.error.value"

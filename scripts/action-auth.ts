@@ -116,7 +116,7 @@ export async function processAuth(
         !request.payload
       )
         throw new Error("Vault is not configured.");
-      const expectedVault = `${config.repository.split("/")[0]}/gitwok-vault`;
+      const expectedVault = `${config.repository.split("/")[0]}/ghrew-vault`;
       if (config.vault.toLowerCase() !== expectedVault.toLowerCase())
         throw new Error("Invalid vault configuration.");
       const operation = await unseal(
@@ -251,7 +251,7 @@ export async function processAuth(
       "Sign-in timed out. Start again.",
       "Vault is not configured.",
       "Vault must be private.",
-      "Install the workspace App on gitwok-vault.",
+      "Install the workspace App on ghrew-vault.",
       "Workspace App cannot access the vault.",
       "Vault repository access must be restricted to workspace administrators.",
       "You are not a member of this workspace.",
@@ -289,18 +289,18 @@ if (
     const event = JSON.parse(
       await readFile(process.env.GITHUB_EVENT_PATH!, "utf8"),
     );
-    const config = JSON.parse(await readFile("gitwok-auth.json", "utf8"));
+    const config = JSON.parse(await readFile("ghrew-auth.json", "utf8"));
     const privateKey = JSON.parse(process.env.MAILBOX_PRIVATE_KEY!);
     await processAuth(event, config, privateKey, {
       fetch,
       token: process.env.GITHUB_TOKEN!,
-      appPrivateKey: process.env.GITWOK_APP_PRIVATE_KEY,
+      appPrivateKey: process.env.GHREW_APP_PRIVATE_KEY,
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
       now: Date.now,
     });
   } catch {
     console.error(
-      "GitWok auth request could not be processed. No credentials were logged.",
+      "Ghrew auth request could not be processed. No credentials were logged.",
     );
     process.exitCode = 1;
   }

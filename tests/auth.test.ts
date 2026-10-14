@@ -39,7 +39,7 @@ describe("OAuth browser boundary", () => {
     const url = new URL(
       await createAuthorization(
         "test-client",
-        "https://gitwok.example/",
+        "https://ghrew.example/",
         storage,
       ),
     );
@@ -47,7 +47,7 @@ describe("OAuth browser boundary", () => {
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("code_challenge")).toHaveLength(43);
     const callback = new URL(
-      `https://gitwok.example/?code=temporary&state=${url.searchParams.get("state")}`,
+      `https://ghrew.example/?code=temporary&state=${url.searchParams.get("state")}`,
     );
     const result = consumeCallback(callback, storage);
     expect(result?.code).toBe("temporary");
@@ -81,7 +81,7 @@ describe("OAuth browser boundary", () => {
       expect(() =>
         consumeCallback(
           new URL(
-            `https://gitwok.example/?code=temporary&state=${"b".repeat(43)}`,
+            `https://ghrew.example/?code=temporary&state=${"b".repeat(43)}`,
           ),
           storage,
         ),
@@ -112,10 +112,10 @@ describe("OAuth browser boundary", () => {
 const env = {
   GITHUB_CLIENT_ID: "test-client",
   GITHUB_CLIENT_SECRET: "test-secret-never-real",
-  GITHUB_APP_SLUG: "test-gitwok",
-  CLIENT_URL: "https://gitwok.example/",
+  GITHUB_APP_SLUG: "test-ghrew",
+  CLIENT_URL: "https://ghrew.example/",
 };
-function exchange(body: unknown, origin = "https://gitwok.example") {
+function exchange(body: unknown, origin = "https://ghrew.example") {
   return new Request("https://oauth.example/exchange", {
     method: "POST",
     headers: { Origin: origin, "Content-Type": "application/json" },
@@ -136,7 +136,7 @@ describe("OAuth-only Worker", () => {
     expect(fetchMock).not.toHaveBeenCalled();
     const config = await worker.fetch(
       new Request("https://oauth.example/config", {
-        headers: { Origin: "https://gitwok.example" },
+        headers: { Origin: "https://ghrew.example" },
       }),
       env,
     );
@@ -144,7 +144,7 @@ describe("OAuth-only Worker", () => {
     expect(await config.json()).toEqual({
       clientId: env.GITHUB_CLIENT_ID,
       redirectUri: env.CLIENT_URL,
-      installUrl: "https://github.com/apps/test-gitwok/installations/new",
+      installUrl: "https://github.com/apps/test-ghrew/installations/new",
     });
   });
 
@@ -185,7 +185,7 @@ describe("OAuth-only Worker", () => {
     );
     expect(response.status).toBe(200);
     expect(response.headers.get("access-control-allow-origin")).toBe(
-      "https://gitwok.example",
+      "https://ghrew.example",
     );
     const result = await response.json();
     expect(result).toEqual({

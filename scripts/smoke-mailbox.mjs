@@ -7,14 +7,14 @@ import {
   requestBody,
   unseal,
 } from "../shared/mailbox.ts";
-const repository = process.argv[2] || "inchidev/gitwok-auth";
+const repository = process.argv[2] || "inchidev/ghrew-auth";
 const kind = process.argv[3] || "probe";
 const creator = process.argv[4] === "creator";
 if (process.argv[4] && !creator)
   throw new Error("Use creator as the optional App selector.");
 if (
   !["probe", "device"].includes(kind) ||
-  !/^[\w-]+\/gitwok-auth$/.test(repository)
+  !/^[\w-]+\/ghrew-auth$/.test(repository)
 )
   throw new Error("Invalid smoke test arguments.");
 const gh = (args) => execFileSync("gh", args, { encoding: "utf8" });
@@ -22,7 +22,7 @@ const config = JSON.parse(
   Buffer.from(
     gh([
       "api",
-      `repos/${repository}/contents/gitwok-auth.json`,
+      `repos/${repository}/contents/ghrew-auth.json`,
       "--jq",
       ".content",
     ]),
@@ -81,7 +81,7 @@ for (let attempt = 0; attempt < 120; attempt++) {
         await writeFile(
           creator
             ? "artifacts/live-auth/creator-session.json"
-            : repository.startsWith("gitwok-sandbox/")
+            : repository.startsWith("ghrew-sandbox/")
               ? "artifacts/live-auth/sandbox-session.json"
               : "artifacts/live-auth/session.json",
           JSON.stringify(reply),

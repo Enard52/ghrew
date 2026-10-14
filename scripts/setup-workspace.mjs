@@ -28,12 +28,12 @@ let plan = {
   ownClient: args.includes("--own-client"),
   publicApp: args.includes("--public-app"),
   clientUrl: args.includes("--own-client")
-    ? `https://${organization}.github.io/gitwok-client/`
-    : "https://gitwok.inchi.dev/",
+    ? `https://${organization}.github.io/ghrew-client/`
+    : "https://ghrew.inchi.dev/",
   nonce: crypto.randomUUID(),
   administrator,
 };
-const recoveryPath = `.gitwok-setup/${organization.toLowerCase()}.json`;
+const recoveryPath = `.ghrew-setup/${organization.toLowerCase()}.json`;
 try {
   const saved = JSON.parse(await readFile(recoveryPath, "utf8"));
   if (
@@ -46,10 +46,10 @@ try {
 } catch (error) {
   if (error.code !== "ENOENT")
     throw new Error(
-      "Could not read installer recovery plan. Check .gitwok-setup before retrying.",
+      "Could not read installer recovery plan. Check .ghrew-setup before retrying.",
     );
 }
-await mkdir(".gitwok-setup", { recursive: true, mode: 0o700 });
+await mkdir(".ghrew-setup", { recursive: true, mode: 0o700 });
 await writeFile(recoveryPath, JSON.stringify(plan), { mode: 0o600 });
 
 await createWorkspaceRepositories(token, plan, (message) =>
@@ -88,10 +88,10 @@ const server = createServer(async (req, res) => {
       );
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.end(
-        `<h1>Your GitWok is prepared</h1><p>Enable Device Flow in your App’s settings, then install it on gitwok-chat, gitwok-auth and gitwok-vault.</p><p><a href="https://github.com/organizations/${organization}/settings/apps/${config.appSlug}">Enable Device Flow</a></p><p><a href="https://github.com/apps/${config.appSlug}/installations/new">Install workspace App</a></p><p><a href="${plan.clientUrl}?auth=${encodeURIComponent(config.repository)}&workspace=${organization}/gitwok-chat">Open your GitWok</a></p>`,
+        `<h1>Your Ghrew is prepared</h1><p>Enable Device Flow in your App’s settings, then install it on ghrew-chat, ghrew-auth and ghrew-vault.</p><p><a href="https://github.com/organizations/${organization}/settings/apps/${config.appSlug}">Enable Device Flow</a></p><p><a href="https://github.com/apps/${config.appSlug}/installations/new">Install workspace App</a></p><p><a href="${plan.clientUrl}?auth=${encodeURIComponent(config.repository)}&workspace=${organization}/ghrew-chat">Open your Ghrew</a></p>`,
       );
       console.log(
-        `Ready: ${plan.clientUrl}?auth=${config.repository}&workspace=${organization}/gitwok-chat`,
+        `Ready: ${plan.clientUrl}?auth=${config.repository}&workspace=${organization}/ghrew-chat`,
       );
       setTimeout(() => server.close(), 10_000);
     } catch {
@@ -112,7 +112,7 @@ const server = createServer(async (req, res) => {
     return;
   }
   const manifest = {
-    name: `GitWok ${organization}`,
+    name: `Ghrew ${organization}`,
     url: plan.clientUrl,
     redirect_url: base + "/callback",
     callback_urls: [plan.clientUrl],
@@ -134,7 +134,7 @@ const server = createServer(async (req, res) => {
     .replaceAll("<", "&lt;");
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.end(
-    `<h1>Register your workspace App</h1><p>GitHub owns your data. This setup saves the private App key and mailbox encryption key in your own gitwok-auth Actions Secrets.</p><form method="post" action="https://github.com/organizations/${organization}/settings/apps/new?state=${state}"><input type="hidden" name="manifest" value="${encoded}"><button>Review and create App on GitHub</button></form>`,
+    `<h1>Register your workspace App</h1><p>GitHub owns your data. This setup saves the private App key and mailbox encryption key in your own ghrew-auth Actions Secrets.</p><form method="post" action="https://github.com/organizations/${organization}/settings/apps/new?state=${state}"><input type="hidden" name="manifest" value="${encoded}"><button>Review and create App on GitHub</button></form>`,
   );
 });
 server.listen(0, "127.0.0.1", () => {

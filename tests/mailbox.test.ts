@@ -109,11 +109,11 @@ describe("encrypted mailbox", () => {
           created_at: new Date().toISOString(),
         },
         sender: { id: 1, login: "alice" },
-        repository: { full_name: "acme/gitwok-auth" },
+        repository: { full_name: "acme/ghrew-auth" },
       },
       {
         version: 1,
-        repository: "acme/gitwok-auth",
+        repository: "acme/ghrew-auth",
         clientId: "app",
         appSlug: "app",
         publicKey: server.publicKey,
@@ -164,7 +164,7 @@ function vaultFixture() {
   const discussion = {
     id: "D_private",
     title: "Leadership",
-    url: "https://github.com/acme/gitwok-vault/discussions/1",
+    url: "https://github.com/acme/ghrew-vault/discussions/1",
     body: JSON.stringify({
       version: 1,
       kind: "private",
@@ -187,7 +187,7 @@ function vaultFixture() {
     if (String(url).includes("/collaborators?"))
       return Response.json(collaborators);
     if (
-      String(url).includes("/contents/.gitwok/members.json") &&
+      String(url).includes("/contents/.ghrew/members.json") &&
       init?.method === "PUT"
     ) {
       const body = JSON.parse(String(init.body));
@@ -197,7 +197,7 @@ function vaultFixture() {
       );
       return Response.json({ content: { sha: "updated" } });
     }
-    if (String(url).includes("/contents/.gitwok/members.json"))
+    if (String(url).includes("/contents/.ghrew/members.json"))
       return Response.json({
         sha: "members-sha",
         content: Buffer.from(JSON.stringify(membership)).toString("base64"),
@@ -234,7 +234,7 @@ function vaultFixture() {
         id: `D_${discussions.length}`,
         title: input.variables.title,
         body: input.variables.body,
-        url: "https://github.com/acme/gitwok-vault/discussions/2",
+        url: "https://github.com/acme/ghrew-vault/discussions/2",
       };
       discussions.push(created);
       return Response.json({
@@ -260,7 +260,7 @@ describe("administrator-only vault", () => {
     const fixture = vaultFixture();
     await expect(
       executeVault(
-        { repository: "acme/gitwok-vault" },
+        { repository: "acme/ghrew-vault" },
         { id: 99, login: "outsider" },
         { op: "list", author: { id: 10 } },
         "nonce",
@@ -273,7 +273,7 @@ describe("administrator-only vault", () => {
   it("filters channels and rejects guessing a private conversation ID for both reads and writes", async () => {
     const fixture = vaultFixture();
     const args = [
-      { repository: "acme/gitwok-vault" },
+      { repository: "acme/ghrew-vault" },
       { id: 3, login: "eve" },
     ] as const;
     expect(
@@ -303,7 +303,7 @@ describe("administrator-only vault", () => {
   it("attributes messages to the authenticated event actor and makes retries idempotent", async () => {
     const fixture = vaultFixture();
     const args = [
-      { repository: "acme/gitwok-vault" },
+      { repository: "acme/ghrew-vault" },
       { id: 1, login: "alice" },
     ] as const;
     const operation = {
@@ -346,7 +346,7 @@ describe("administrator-only vault", () => {
   it("creates one canonical DM for either participant and hides it from another member", async () => {
     const fixture = vaultFixture();
     const first = await executeVault(
-      { repository: "acme/gitwok-vault" },
+      { repository: "acme/ghrew-vault" },
       { id: 1, login: "alice" },
       { op: "create", kind: "dm", name: "DM", members: [2] },
       "nonce-a",
@@ -354,7 +354,7 @@ describe("administrator-only vault", () => {
       fixture.fetcher,
     );
     const second = await executeVault(
-      { repository: "acme/gitwok-vault" },
+      { repository: "acme/ghrew-vault" },
       { id: 2, login: "bob" },
       { op: "create", kind: "dm", name: "DM", members: [1] },
       "nonce-b",
@@ -365,7 +365,7 @@ describe("administrator-only vault", () => {
     expect(fixture.discussions).toHaveLength(2);
     expect(JSON.parse(fixture.discussions[1]!.body).members).toEqual([1, 2]);
     const stranger = await executeVault(
-      { repository: "acme/gitwok-vault" },
+      { repository: "acme/ghrew-vault" },
       { id: 3, login: "eve" },
       { op: "list" },
       "nonce-c",
@@ -379,7 +379,7 @@ describe("administrator-only vault", () => {
     fixture.collaborators.push({ id: 3 });
     await expect(
       executeVault(
-        { repository: "acme/gitwok-vault" },
+        { repository: "acme/ghrew-vault" },
         { id: 1, login: "alice" },
         { op: "list" },
         "nonce",
@@ -396,7 +396,7 @@ describe("administrator-only vault", () => {
     );
     await expect(
       executeVault(
-        { repository: "acme/gitwok-vault" },
+        { repository: "acme/ghrew-vault" },
         { id: 1, login: "alice" },
         { op: "read", conversation: "D_private" },
         "nonce",
@@ -414,7 +414,7 @@ describe("administrator-only vault", () => {
     ])
       await expect(
         executeVault(
-          { repository: "acme/gitwok-vault" },
+          { repository: "acme/ghrew-vault" },
           { id: 1, login: "alice" },
           operation,
           "nonce",
@@ -426,7 +426,7 @@ describe("administrator-only vault", () => {
 });
 
 describe("open sandbox registration", () => {
-  const settings = { repository: "acme/gitwok-vault" };
+  const settings = { repository: "acme/ghrew-vault" };
   const actor = { id: 99, login: "visitor" };
   it("does not allow self-registration in an ordinary workspace", async () => {
     const f = vaultFixture();

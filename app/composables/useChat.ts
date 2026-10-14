@@ -34,11 +34,11 @@ export function useChat(
   const selectedThread = ref("");
   const search = ref("");
   const localMessages = useLocalStorage<Message[]>(
-    "gitwok:preview-messages:v2",
+    "ghrew:preview-messages:v2",
     previewMessages(),
   );
   const drafts = useLocalStorage<Record<string, string>>(
-    "gitwok:drafts:v2",
+    "ghrew:drafts:v2",
     {},
   );
   const authenticated = computed(() =>

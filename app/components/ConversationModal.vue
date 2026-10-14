@@ -163,7 +163,7 @@ async function create() {
         </p>
         <template v-else>
           <p class="text-muted text-sm">
-            Stored in the administrator-only gitwok-vault. Selected participants
+            Stored in the administrator-only ghrew-vault. Selected participants
             receive encrypted responses through GitHub Actions. Workspace
             administrators can access the vault.
           </p>

@@ -14,12 +14,12 @@ test("workspace creation is reachable before sandbox sign-in on desktop and phon
     r.fulfill({
       json: {
         version: 1,
-        repository: "gitwok-sandbox/gitwok-auth",
+        repository: "ghrew-sandbox/ghrew-auth",
         clientId: "sandbox",
         appSlug: "sandbox",
         publicKey: key.publicKey,
         creatorClientId: "creator",
-        creatorAppSlug: "gitwok-creator",
+        creatorAppSlug: "ghrew-creator",
       },
     }),
   );
@@ -34,13 +34,13 @@ test("workspace creation is reachable before sandbox sign-in on desktop and phon
     }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Install GitWok Creator", exact: true }),
+    page.getByRole("link", { name: "Install Ghrew Creator", exact: true }),
   ).toHaveAttribute(
     "href",
-    "https://github.com/apps/gitwok-creator/installations/new",
+    "https://github.com/apps/ghrew-creator/installations/new",
   );
   await expect(
-    page.getByRole("button", { name: "Authorize GitWok Creator", exact: true }),
+    page.getByRole("button", { name: "Authorize Ghrew Creator", exact: true }),
   ).toBeEnabled();
   await expect(
     page.getByText("Your workspace is verified", { exact: true }),
@@ -66,17 +66,17 @@ test("setup resumes after reload and verifies the actual vault before offering t
   const key = await newMailboxKey();
   const config = {
     version: 1,
-    repository: "acme/gitwok-auth",
+    repository: "acme/ghrew-auth",
     clientId: "workspace",
     appSlug: "workspace",
     publicKey: key.publicKey,
-    vault: "acme/gitwok-vault",
+    vault: "acme/ghrew-vault",
   };
   await page.addInitScript(
     ({ config }) => {
-      localStorage.setItem("gitwok:auth-repository:v1", config.repository);
+      localStorage.setItem("ghrew:auth-repository:v1", config.repository);
       sessionStorage.setItem(
-        "gitwok:github-session:v1",
+        "ghrew:github-session:v1",
         JSON.stringify({
           accessToken: "runtime-user-token",
           expiresAt: Date.now() + 3600000,
@@ -84,12 +84,12 @@ test("setup resumes after reload and verifies the actual vault before offering t
         }),
       );
       sessionStorage.setItem(
-        "gitwok:setup-config",
+        "ghrew:setup-config",
         JSON.stringify({
           config,
           plan: {
             organization: "acme",
-            clientUrl: "https://acme.github.io/gitwok-client/",
+            clientUrl: "https://acme.github.io/ghrew-client/",
             ownClient: true,
             nonce: "setup",
             administrator: { id: 1, login: "alice" },
@@ -103,27 +103,27 @@ test("setup resumes after reload and verifies the actual vault before offering t
   let release = false;
   let directVault = false;
   page.on("request", (r) => {
-    if (r.url().startsWith("https://api.github.com/repos/acme/gitwok-vault"))
+    if (r.url().startsWith("https://api.github.com/repos/acme/ghrew-vault"))
       directVault = true;
   });
   await page.route("https://api.github.com/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/user")
       return route.fulfill({ json: { id: 1, login: "alice" } });
-    if (path.endsWith("/contents/gitwok-auth.json"))
+    if (path.endsWith("/contents/ghrew-auth.json"))
       return route.fulfill({
         json: path.includes("/acme/")
           ? config
           : {
               ...config,
-              repository: "gitwok-sandbox/gitwok-auth",
-              creatorAppSlug: "gitwok-creator",
+              repository: "ghrew-sandbox/ghrew-auth",
+              creatorAppSlug: "ghrew-creator",
             },
       });
-    if (path === "/repos/acme/gitwok-chat")
+    if (path === "/repos/acme/ghrew-chat")
       return route.fulfill({ json: { private: false, has_discussions: true } });
     if (
-      path === "/repos/acme/gitwok-auth/issues" &&
+      path === "/repos/acme/ghrew-auth/issues" &&
       route.request().method() === "POST"
     ) {
       const body = route.request().postDataJSON();
@@ -183,7 +183,7 @@ test("setup resumes after reload and verifies the actual vault before offering t
     page.getByRole("link", { name: "Open my workspace", exact: true }),
   ).toHaveAttribute(
     "href",
-    /^https:\/\/acme.github.io\/gitwok-client\/\?auth=acme%2Fgitwok-auth&workspace=acme%2Fgitwok-chat$/,
+    /^https:\/\/acme.github.io\/ghrew-client\/\?auth=acme%2Fghrew-auth&workspace=acme%2Fghrew-chat$/,
   );
   expect(directVault).toBe(false);
   await page.screenshot({
@@ -198,33 +198,33 @@ test("a saved setup requires its own workspace sign-in when another workspace se
   const key = await newMailboxKey();
   const config = {
     version: 1,
-    repository: "acme/gitwok-auth",
+    repository: "acme/ghrew-auth",
     clientId: "workspace",
     appSlug: "workspace",
     publicKey: key.publicKey,
-    vault: "acme/gitwok-vault",
+    vault: "acme/ghrew-vault",
   };
   await page.addInitScript(
     ({ config }) => {
       localStorage.setItem(
-        "gitwok:auth-repository:v1",
-        "gitwok-sandbox/gitwok-auth",
+        "ghrew:auth-repository:v1",
+        "ghrew-sandbox/ghrew-auth",
       );
       sessionStorage.setItem(
-        "gitwok:github-session:v1",
+        "ghrew:github-session:v1",
         JSON.stringify({
           accessToken: "sandbox-token",
           expiresAt: Date.now() + 3600000,
-          mailboxRepository: "gitwok-sandbox/gitwok-auth",
+          mailboxRepository: "ghrew-sandbox/ghrew-auth",
         }),
       );
       sessionStorage.setItem(
-        "gitwok:setup-config",
+        "ghrew:setup-config",
         JSON.stringify({
           config,
           plan: {
             organization: "acme",
-            clientUrl: "https://acme.github.io/gitwok-client/",
+            clientUrl: "https://acme.github.io/ghrew-client/",
             ownClient: true,
             nonce: "setup",
             administrator: { id: 1, login: "alice" },
@@ -240,12 +240,12 @@ test("a saved setup requires its own workspace sign-in when another workspace se
     if (route.request().method() === "POST") writes.push(path);
     if (path === "/user")
       return route.fulfill({ json: { id: 1, login: "alice" } });
-    if (path.endsWith("/contents/gitwok-auth.json"))
+    if (path.endsWith("/contents/ghrew-auth.json"))
       return route.fulfill({
         json: {
           ...config,
-          repository: "gitwok-sandbox/gitwok-auth",
-          creatorAppSlug: "gitwok-creator",
+          repository: "ghrew-sandbox/ghrew-auth",
+          creatorAppSlug: "ghrew-creator",
         },
       });
     return route.fulfill({

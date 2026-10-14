@@ -7,7 +7,7 @@ function comment(id: string, body: string) {
     body,
     createdAt: "2026-10-14T08:00:00Z",
     updatedAt: "2026-10-14T08:00:00Z",
-    url: `https://github.com/inchidev/gitwok/discussions/1#${id}`,
+    url: `https://github.com/inchidev/ghrew/discussions/1#${id}`,
     author: { login: "robin" },
     replies: { nodes: [], pageInfo },
   };
@@ -36,7 +36,7 @@ async function githubRoutes(page: Page, failSend = false) {
         repositories: [
           {
             id: 1,
-            full_name: "inchidev/gitwok",
+            full_name: "inchidev/ghrew",
             private: false,
             has_discussions: true,
           },
@@ -57,12 +57,12 @@ async function githubRoutes(page: Page, failSend = false) {
               nodes: [
                 {
                   id:
-                    variables.name === "gitwok"
+                    variables.name === "ghrew"
                       ? "github-general"
                       : "private-general",
                   title: "#general",
                   body: "The team’s conversation",
-                  url: "https://github.com/inchidev/gitwok/discussions/1",
+                  url: "https://github.com/inchidev/ghrew/discussions/1",
                 },
               ],
               pageInfo,
@@ -98,7 +98,7 @@ async function githubRoutes(page: Page, failSend = false) {
 async function session(page: Page) {
   await page.addInitScript(() =>
     sessionStorage.setItem(
-      "gitwok:github-session:v1",
+      "ghrew:github-session:v1",
       JSON.stringify({
         accessToken: "test-browser-session",
         expiresAt: Date.now() + 60 * 60_000,
@@ -119,7 +119,7 @@ test("GitHub OAuth completes with PKCE, sends directly to Discussions, and clear
       body: JSON.stringify({
         clientId: "test-client",
         redirectUri: "http://127.0.0.1:5179/",
-        installUrl: "https://github.com/apps/test-gitwok/installations/new",
+        installUrl: "https://github.com/apps/test-ghrew/installations/new",
       }),
     }),
   );
@@ -178,7 +178,7 @@ test("GitHub OAuth completes with PKCE, sends directly to Discussions, and clear
   await expect(page.getByRole("dialog")).toBeVisible();
   expect(
     await page.evaluate(() =>
-      sessionStorage.getItem("gitwok:github-session:v1"),
+      sessionStorage.getItem("ghrew:github-session:v1"),
     ),
   ).toBeNull();
   await expect(
@@ -224,7 +224,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
   ).toBeVisible();
   const composer = page.getByRole("textbox", { name: "Message", exact: true });
   await composer.fill("Draft for the public workspace");
-  await page.getByRole("button", { name: /inchidev inchidev\/gitwok/ }).click();
+  await page.getByRole("button", { name: /inchidev inchidev\/ghrew/ }).click();
   await page
     .getByRole("button", { name: "my-team/private-chat", exact: true })
     .click();
@@ -240,7 +240,7 @@ test("switching repositories isolates messages and keeps drafts in their origina
     .getByRole("button", { name: /my-team my-team\/private-chat/ })
     .click();
   await page
-    .getByRole("button", { name: "inchidev/gitwok", exact: true })
+    .getByRole("button", { name: "inchidev/ghrew", exact: true })
     .click();
   await expect(composer).toHaveValue("Draft for the public workspace");
 });

@@ -9,7 +9,7 @@ export interface SetupPlan {
   registrationState?: string;
   administrator: { id: number; login: string };
 }
-export const SETUP_KEY = "gitwok:setup:v1";
+export const SETUP_KEY = "ghrew:setup:v1";
 type RegistrationMaterial = {
   createdAt: number;
   nonce: string;
@@ -71,14 +71,14 @@ export async function createWorkspaceRepositories(
     );
   if (organization.default_repository_permission !== "none")
     throw new Error(
-      "Set organization base permissions to None first. Otherwise every organization member can read gitwok-vault. GitWok will not change access to your other repositories.",
+      "Set organization base permissions to None first. Otherwise every organization member can read ghrew-vault. Ghrew will not change access to your other repositories.",
     );
   const repositories = [
-    ["gitwok-chat", false],
-    ["gitwok-vault", true],
-    ["gitwok-auth", false],
+    ["ghrew-chat", false],
+    ["ghrew-vault", true],
+    ["ghrew-auth", false],
   ] as const;
-  const installationDescription = `GitWok installation ${plan.nonce} administrator ${plan.administrator.id}`;
+  const installationDescription = `Ghrew installation ${plan.nonce} administrator ${plan.administrator.id}`;
   // Preflight the whole namespace before creating anything. Never adopt an unrelated repository.
   for (const [name] of repositories) {
     const response = await fetch(
@@ -97,7 +97,7 @@ export async function createWorkspaceRepositories(
       if (existingRepository.description === installationDescription) continue;
       const file = await adminApi(
         token,
-        `/repos/${plan.organization}/${name}/contents/.gitwok-installation.json`,
+        `/repos/${plan.organization}/${name}/contents/.ghrew-installation.json`,
       );
       const marker = JSON.parse(
         new TextDecoder().decode(
@@ -110,7 +110,7 @@ export async function createWorkspaceRepositories(
         marker.nonce !== plan.nonce ||
         marker.administrator !== plan.administrator.id
       )
-        throw new Error(`${name} already exists. GitWok will not replace it.`);
+        throw new Error(`${name} already exists. Ghrew will not replace it.`);
     }
   }
   for (const [name, isPrivate] of repositories) {
@@ -134,7 +134,7 @@ export async function createWorkspaceRepositories(
       await putFile(
         token,
         `${plan.organization}/${name}`,
-        ".gitwok-installation.json",
+        ".ghrew-installation.json",
         JSON.stringify({
           nonce: plan.nonce,
           administrator: plan.administrator.id,
@@ -144,7 +144,7 @@ export async function createWorkspaceRepositories(
     const repo = await adminApi(token, `/repos/${plan.organization}/${name}`);
     if (repo.private !== isPrivate)
       throw new Error(`Unexpected visibility on ${name}. Setup stopped.`);
-    if (name !== "gitwok-auth") {
+    if (name !== "ghrew-auth") {
       await adminApi(token, `/repos/${plan.organization}/${name}`, "PATCH", {
         has_discussions: true,
       });
@@ -168,7 +168,7 @@ export async function createWorkspaceRepositories(
     }
   }
   const existingMembers = await fetch(
-    `https://api.github.com/repos/${plan.organization}/gitwok-vault/contents/.gitwok/members.json`,
+    `https://api.github.com/repos/${plan.organization}/ghrew-vault/contents/.ghrew/members.json`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -181,8 +181,8 @@ export async function createWorkspaceRepositories(
   if (existingMembers.status === 404) {
     await putFile(
       token,
-      `${plan.organization}/gitwok-vault`,
-      ".gitwok/members.json",
+      `${plan.organization}/ghrew-vault`,
+      ".ghrew/members.json",
       JSON.stringify(
         {
           version: 1,
@@ -219,7 +219,7 @@ export async function putFile(
     Array.from(bytes, (c) => String.fromCharCode(c)).join(""),
   );
   return adminApi(token, `/repos/${repository}/contents/${path}`, "PUT", {
-    message: `Configure GitWok: ${path}`,
+    message: `Configure Ghrew: ${path}`,
     content: encoded,
     ...(sha ? { sha } : {}),
   });
@@ -259,7 +259,7 @@ export function beginAppRegistration(plan: SetupPlan) {
   redirect.hash = "";
   redirect.searchParams.set("setup", state);
   const manifest = {
-    name: `GitWok ${plan.organization}`,
+    name: `Ghrew ${plan.organization}`,
     url: plan.clientUrl,
     redirect_url: redirect.href,
     callback_urls: [plan.clientUrl],
@@ -302,7 +302,7 @@ export async function finishAppRegistration(
   if (!material && typeof sessionStorage !== "undefined") {
     try {
       material =
-        JSON.parse(sessionStorage.getItem("gitwok:setup-material") || "null") ||
+        JSON.parse(sessionStorage.getItem("ghrew:setup-material") || "null") ||
         undefined;
     } catch {
       /* Invalid local recovery data is ignored. */
@@ -315,7 +315,7 @@ export async function finishAppRegistration(
   ) {
     material = undefined;
     if (typeof sessionStorage !== "undefined")
-      sessionStorage.removeItem("gitwok:setup-material");
+      sessionStorage.removeItem("ghrew:setup-material");
   }
   if (!material) {
     const response = await fetch(
@@ -352,12 +352,12 @@ export async function finishAppRegistration(
     };
     materials.set(plan.nonce, material);
     if (typeof sessionStorage !== "undefined")
-      sessionStorage.setItem("gitwok:setup-material", JSON.stringify(material));
+      sessionStorage.setItem("ghrew:setup-material", JSON.stringify(material));
   }
   const { app, key } = material;
   if (app.owner.login.toLowerCase() !== plan.organization.toLowerCase())
     throw new Error("The registered App belongs to a different organization.");
-  const repository = `${plan.organization}/gitwok-auth`;
+  const repository = `${plan.organization}/ghrew-auth`;
   const config: MailboxConfig = {
     version: 1,
     repository,
@@ -365,7 +365,7 @@ export async function finishAppRegistration(
     appSlug: app.slug,
     appId: String(app.id),
     publicKey: key.publicKey,
-    vault: `${plan.organization}/gitwok-vault`,
+    vault: `${plan.organization}/ghrew-vault`,
   };
   onStep("Saving keys in your GitHub Actions Secrets…");
   await putSecret(
@@ -374,7 +374,7 @@ export async function finishAppRegistration(
     "MAILBOX_PRIVATE_KEY",
     JSON.stringify(key.privateKey),
   );
-  await putSecret(token, repository, "GITWOK_APP_PRIVATE_KEY", app.pem);
+  await putSecret(token, repository, "GHREW_APP_PRIVATE_KEY", app.pem);
   const bundleResponse = await fetch(`${baseURL}bootstrap/auth-bundle.json`, {
     credentials: "omit",
   });
@@ -397,13 +397,13 @@ export async function finishAppRegistration(
   await putFile(
     token,
     repository,
-    "gitwok-auth.json",
+    "ghrew-auth.json",
     JSON.stringify(config, null, 2),
   );
   await putFile(
     token,
-    `${plan.organization}/gitwok-chat`,
-    "gitwok-workspace.json",
+    `${plan.organization}/ghrew-chat`,
+    "ghrew-workspace.json",
     JSON.stringify(
       {
         version: 1,
@@ -418,14 +418,14 @@ export async function finishAppRegistration(
   onStep("Preparing the first public channel…");
   await createPublicChannel(
     token,
-    `${plan.organization}/gitwok-chat`,
+    `${plan.organization}/ghrew-chat`,
     "general",
     "The shared conversation for this workspace.",
   );
   if (plan.ownClient) await publishOwnClient(token, plan, onStep);
   materials.delete(plan.nonce);
   if (typeof sessionStorage !== "undefined")
-    sessionStorage.removeItem("gitwok:setup-material");
+    sessionStorage.removeItem("ghrew:setup-material");
   return config;
 }
 export async function publishOwnClient(
@@ -434,7 +434,7 @@ export async function publishOwnClient(
   onStep: (message: string) => void,
 ) {
   const organization = plan.organization;
-  const repository = `${organization}/gitwok-client`;
+  const repository = `${organization}/ghrew-client`;
   onStep("Preparing your independent client repository…");
   const existing = await fetch(`https://api.github.com/repos/${repository}`, {
     headers: {
@@ -443,21 +443,21 @@ export async function publishOwnClient(
     },
   });
   if (existing.status === 404) {
-    await adminApi(token, "/repos/inchidev/gitwok/generate", "POST", {
+    await adminApi(token, "/repos/inchidev/ghrew/generate", "POST", {
       owner: organization,
-      name: "gitwok-client",
+      name: "ghrew-client",
       private: false,
       include_all_branches: false,
-      description: `GitWok client installation ${plan.nonce}`,
+      description: `Ghrew client installation ${plan.nonce}`,
     });
   } else {
     if (
       !existing.ok ||
       (await existing.json()).description !==
-        `GitWok client installation ${plan.nonce}`
+        `Ghrew client installation ${plan.nonce}`
     )
       throw new Error(
-        "gitwok-client already exists. GitWok will not replace it.",
+        "ghrew-client already exists. Ghrew will not replace it.",
       );
   }
   // Template generation is asynchronous: wait for the default branch before writes.
@@ -485,12 +485,12 @@ export async function publishOwnClient(
   const configuredClient = await putFile(
     token,
     repository,
-    "gitwok-client.json",
+    "ghrew-client.json",
     JSON.stringify(
       {
         version: 1,
-        authRepository: `${organization}/gitwok-auth`,
-        defaultRepository: `${organization}/gitwok-chat`,
+        authRepository: `${organization}/ghrew-auth`,
+        defaultRepository: `${organization}/ghrew-chat`,
       },
       null,
       2,

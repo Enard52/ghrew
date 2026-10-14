@@ -35,7 +35,7 @@ const repos = useQuery({
 const visibleRepositories = computed(() =>
   (repos.data.value || []).filter(
     (repo) =>
-      !["gitwok-vault", "gitwok-auth"].includes(
+      !["ghrew-vault", "ghrew-auth"].includes(
         repo.full_name.split("/")[1]!,
       ) &&
       (!props.publicOnly || !repo.private),
@@ -51,7 +51,7 @@ function connectOrganization(owner: string) {
     repo.full_name.startsWith(owner + "/"),
   );
   const primary =
-    values.find((repo) => repo.full_name === `${owner}/gitwok-chat`) ||
+    values.find((repo) => repo.full_name === `${owner}/ghrew-chat`) ||
     values.find((repo) => repo.has_discussions) ||
     values[0];
   if (primary) connect(primary.full_name);
@@ -124,7 +124,7 @@ function connect(value: string) {
           <UFormField
             name="repository"
             label="Repository"
-            description="You need access, and the GitWok GitHub App must be installed there."
+            description="You need access, and the Ghrew GitHub App must be installed there."
           >
             <UInput
               v-model="state.repository"
@@ -153,7 +153,7 @@ function connect(value: string) {
         />
         <p>
           Create a workspace with public channels, one administrator-only
-          gitwok-vault for private channels and DMs, and your own sign-in
+          ghrew-vault for private channels and DMs, and your own sign-in
           workflow.
         </p>
         <div class="flex flex-wrap gap-2 mt-3">
@@ -169,7 +169,7 @@ function connect(value: string) {
             trailing-icon="i-lucide-arrow-up-right"
           />
           <UButton
-            label="Install GitWok App"
+            label="Install Ghrew App"
             color="neutral"
             variant="outline"
             size="sm"

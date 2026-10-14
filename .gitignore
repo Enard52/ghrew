@@ -17,4 +17,7 @@ test-results/
 public/bootstrap/auth-bundle.json
 .DS_Store
 
+.ghrew-setup/
+
+# Retired setup recovery material (may contain credentials).
 .gitwok-setup/

@@ -1,4 +1,4 @@
-name: GitWok sign-in
+name: Ghrew sign-in
 on:
   issues:
     types: [opened]
@@ -6,12 +6,12 @@ permissions:
   contents: read
   issues: write
 concurrency:
-  group: ${{ startsWith(github.event.issue.title, 'GitWok vault ') && 'gitwok-vault' || format('gitwok-auth-{0}', github.event.issue.user.id) }}
+  group: ${{ startsWith(github.event.issue.title, 'Ghrew vault ') && 'ghrew-vault' || format('ghrew-auth-{0}', github.event.issue.user.id) }}
   cancel-in-progress: false
   queue: max
 jobs:
   sign-in:
-    if: startsWith(github.event.issue.title, 'GitWok auth ') || startsWith(github.event.issue.title, 'GitWok vault ')
+    if: startsWith(github.event.issue.title, 'Ghrew auth ') || startsWith(github.event.issue.title, 'Ghrew vault ')
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -23,4 +23,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           MAILBOX_PRIVATE_KEY: ${{ secrets.MAILBOX_PRIVATE_KEY }}
-          GITWOK_APP_PRIVATE_KEY: ${{ secrets.GITWOK_APP_PRIVATE_KEY }}
+          GHREW_APP_PRIVATE_KEY: ${{ secrets.GHREW_APP_PRIVATE_KEY }}

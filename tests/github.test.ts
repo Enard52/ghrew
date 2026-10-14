@@ -184,20 +184,20 @@ describe("GitHub transport", () => {
 
 describe("untrusted content boundaries", () => {
   it("rejects repository paths that point outside GitHub", () => {
-    expect(parseRepository("https://github.com/inchidev/gitwok.git")).toEqual([
+    expect(parseRepository("https://github.com/inchidev/ghrew.git")).toEqual([
       "inchidev",
-      "gitwok",
+      "ghrew",
     ]);
     expect(() =>
-      parseRepository("https://evil.example/inchidev/gitwok"),
+      parseRepository("https://evil.example/inchidev/ghrew"),
     ).toThrow();
   });
 
   it("only links to HTTPS GitHub URLs", () => {
     expect(safeUrl("javascript:alert(1)")).toBe("");
     expect(safeUrl("https://github.com.evil.example/a")).toBe("");
-    expect(safeUrl("https://github.com/inchidev/gitwok")).toBe(
-      "https://github.com/inchidev/gitwok",
+    expect(safeUrl("https://github.com/inchidev/ghrew")).toBe(
+      "https://github.com/inchidev/ghrew",
     );
   });
 });

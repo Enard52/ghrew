@@ -2,7 +2,7 @@
 import { createServer } from "node:http";
 import { execFileSync } from "node:child_process";
 const organization = "inchidev",
-  repository = "inchidev/gitwok-auth",
+  repository = "inchidev/ghrew-auth",
   state = crypto.randomUUID();
 let base = "";
 const gh = (args) =>
@@ -37,7 +37,7 @@ const server = createServer(async (req, res) => {
       )
         throw new Error("Unexpected App owner");
       const file = JSON.parse(
-        gh(["api", `repos/${repository}/contents/gitwok-auth.json`]),
+        gh(["api", `repos/${repository}/contents/ghrew-auth.json`]),
       );
       const config = JSON.parse(Buffer.from(file.content, "base64").toString());
       config.creatorClientId = app.client_id;
@@ -48,13 +48,13 @@ const server = createServer(async (req, res) => {
           "api",
           "-X",
           "PUT",
-          `repos/${repository}/contents/gitwok-auth.json`,
+          `repos/${repository}/contents/ghrew-auth.json`,
           "--input",
           "-",
         ],
         {
           input: JSON.stringify({
-            message: "Configure shared GitWok Creator",
+            message: "Configure shared Ghrew Creator",
             sha: file.sha,
             content: Buffer.from(JSON.stringify(config, null, 2)).toString(
               "base64",
@@ -66,7 +66,7 @@ const server = createServer(async (req, res) => {
       // The manifest's generated private key and client secret are not needed by Device Flow and are never saved.
       res.setHeader("Content-Type", "text/html");
       res.end(
-        `<h1>GitWok Creator registered</h1><p>Enable Device Flow in <a href="https://github.com/organizations/${organization}/settings/apps/${app.slug}">App settings</a>, then install it in the organization where you are creating a workspace.</p>`,
+        `<h1>Ghrew Creator registered</h1><p>Enable Device Flow in <a href="https://github.com/organizations/${organization}/settings/apps/${app.slug}">App settings</a>, then install it in the organization where you are creating a workspace.</p>`,
       );
       console.log(
         `Creator registered: ${app.slug}. Enable Device Flow before use.`,
@@ -84,13 +84,13 @@ const server = createServer(async (req, res) => {
     return;
   }
   const manifest = {
-    name: "GitWok Creator",
+    name: "Ghrew Creator",
     description:
-      "One-time GitWok workspace installer. Revoke access after your own workspace App is configured.",
-    url: "https://gitwok.inchi.dev/",
+      "One-time Ghrew workspace installer. Revoke access after your own workspace App is configured.",
+    url: "https://ghrew.inchi.dev/",
     redirect_url: base + "/callback",
     hook_attributes: {
-      url: "https://gitwok.inchi.dev/unused-webhook",
+      url: "https://ghrew.inchi.dev/unused-webhook",
       active: false,
     },
     public: true,
@@ -113,7 +113,7 @@ const server = createServer(async (req, res) => {
     .replaceAll("<", "&lt;");
   res.setHeader("Content-Type", "text/html");
   res.end(
-    `<h1>Register GitWok Creator</h1><p>Creates repositories and configures workflow files, encrypted secrets, public configuration and Pages using the installing administrator's authority. It stores no installer private key. Its access can be revoked after setup.</p><form action="https://github.com/organizations/${organization}/settings/apps/new?state=${state}" method="post"><input type="hidden" name="manifest" value="${encoded}"><button>Review App permissions on GitHub</button></form>`,
+    `<h1>Register Ghrew Creator</h1><p>Creates repositories and configures workflow files, encrypted secrets, public configuration and Pages using the installing administrator's authority. It stores no installer private key. Its access can be revoked after setup.</p><form action="https://github.com/organizations/${organization}/settings/apps/new?state=${state}" method="post"><input type="hidden" name="manifest" value="${encoded}"><button>Review App permissions on GitHub</button></form>`,
   );
 });
 server.listen(5193, "127.0.0.1", () => {

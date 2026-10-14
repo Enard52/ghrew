@@ -1,10 +1,10 @@
-# GitWok direction
+# Ghrew direction
 
 ## Brief (self-authored from the implementation request)
 
 A public, MIT-licensed experiment for a small team. Everyone signs in with
 their own GitHub account. The shared static client opens into the chat shell;
-a welcome modal explains GitWok and offers GitHub sign-in. Conversations live
+a welcome modal explains Ghrew and offers GitHub sign-in. Conversations live
 in GitHub Discussions, and a separate OAuth-only handler exchanges login codes.
 The sidebar offers connecting another repository and hosting a team-owned copy.
 The implementation uses Nuxt 4, Nuxt UI, Tailwind, VueUse, Vue Query, Zod and
@@ -66,14 +66,14 @@ Voice: brief and specific, like a helpful teammate.
 
 ## Content and states
 
-Entry: GitWok; “Your team, in conversation.”; “A shared place to talk, backed
+Entry: Ghrew; “Your team, in conversation.”; “A shared place to talk, backed
 by your GitHub Discussions.”; “Join with your GitHub account.”; “Your team’s
 repository.”; “Open source, yours to host.”; “Continue with GitHub”; “Explore
 the local preview”; “Source code”. No separate password or manual token field.
 Sidebar: “The shared kitchen” in preview; repository name in live workspaces;
-“Your workspaces”; “Conversations”; “Make yourself at home”; “Put GitWok on
+“Your workspaces”; “Conversations”; “Make yourself at home”; “Put Ghrew on
 your own GitHub”; account name; “Connected with GitHub”.
-Hosting modal: “A GitWok of your own”; client template, separate private chat
+Hosting modal: “A Ghrew of your own”; client template, separate private chat
 repository, own GitHub App and OAuth handler, reviewed updates.
 Chat: #general; “The room for everyday things”; search messages; channel
 list; “Write a message…”; “Send message”; “Reply in thread”; “Open in GitHub”.

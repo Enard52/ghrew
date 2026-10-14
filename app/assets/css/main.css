@@ -113,14 +113,14 @@ button:disabled {
   width: 100%;
   height: 100%;
 }
-.gitwok-shell {
+.ghrew-shell {
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   height: 100dvh;
   min-height: 0;
   overflow: hidden;
 }
-.gitwok-shell.has-thread {
+.ghrew-shell.has-thread {
   grid-template-columns: 248px minmax(320px, 1fr) 370px;
 }
 .channel-sidebar {
@@ -674,7 +674,7 @@ button:disabled {
   }
 }
 @media (max-width: 1150px) {
-  .gitwok-shell.has-thread {
+  .ghrew-shell.has-thread {
     grid-template-columns: 220px minmax(280px, 1fr) 320px;
   }
   .conversation-header,
@@ -706,8 +706,8 @@ button:disabled {
   }
 }
 @media (max-width: 900px) {
-  .gitwok-shell,
-  .gitwok-shell.has-thread {
+  .ghrew-shell,
+  .ghrew-shell.has-thread {
     grid-template-columns: 220px minmax(0, 1fr);
   }
   .thread-panel {
@@ -721,8 +721,8 @@ button:disabled {
   }
 }
 @media (max-width: 600px) {
-  .gitwok-shell,
-  .gitwok-shell.has-thread {
+  .ghrew-shell,
+  .ghrew-shell.has-thread {
     grid-template-columns: minmax(0, 1fr);
   }
   .channel-sidebar {

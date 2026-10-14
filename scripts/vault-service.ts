@@ -43,7 +43,7 @@ export async function installationToken(
     { headers },
   );
   if (!installResponse.ok)
-    throw new Error("Install the workspace App on gitwok-vault.");
+    throw new Error("Install the workspace App on ghrew-vault.");
   const installation = (await installResponse.json()) as { id: number };
   const tokenResponse = await request(
     `https://api.github.com/app/installations/${installation.id}/access_tokens`,
@@ -116,7 +116,7 @@ export async function executeVault(
     return value.data;
   }
   const memberFile = await api(
-    `/repos/${settings.repository}/contents/.gitwok/members.json`,
+    `/repos/${settings.repository}/contents/.ghrew/members.json`,
   );
   const membership = validateMembers(
     JSON.parse(Buffer.from(memberFile.content, "base64").toString()),
@@ -157,10 +157,10 @@ export async function executeVault(
     if (!admin && !member) {
       membership.members.push({ id: actor.id, login: actor.login });
       await api(
-        `/repos/${settings.repository}/contents/.gitwok/members.json`,
+        `/repos/${settings.repository}/contents/.ghrew/members.json`,
         "PUT",
         {
-          message: "Register GitWok member",
+          message: "Register Ghrew member",
           sha: memberFile.sha,
           content: Buffer.from(JSON.stringify(membership, null, 2)).toString(
             "base64",
@@ -186,10 +186,10 @@ export async function executeVault(
       (m) => m.id !== operation.userId,
     );
     await api(
-      `/repos/${settings.repository}/contents/.gitwok/members.json`,
+      `/repos/${settings.repository}/contents/.ghrew/members.json`,
       "PUT",
       {
-        message: "Update GitWok membership",
+        message: "Update Ghrew membership",
         sha: memberFile.sha,
         content: Buffer.from(JSON.stringify(membership, null, 2)).toString(
           "base64",
@@ -209,10 +209,10 @@ export async function executeVault(
     if (existing) existing.login = member.login;
     else membership.members.push({ id: member.id, login: member.login });
     await api(
-      `/repos/${settings.repository}/contents/.gitwok/members.json`,
+      `/repos/${settings.repository}/contents/.ghrew/members.json`,
       "PUT",
       {
-        message: "Update GitWok membership",
+        message: "Update Ghrew membership",
         sha: memberFile.sha,
         content: Buffer.from(JSON.stringify(membership, null, 2)).toString(
           "base64",
@@ -253,7 +253,7 @@ export async function executeVault(
         )
           conversations.push({ ...discussion, meta });
       } catch {
-        /* Non-GitWok Discussions are never exposed through the vault. */
+        /* Non-Ghrew Discussions are never exposed through the vault. */
       }
     }
     const page = data.repository.discussions.pageInfo;

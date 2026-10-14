@@ -13,7 +13,7 @@ import {
 } from "../../shared/mailbox";
 import type { VaultOperation } from "../../shared/vault";
 
-const repositoryPattern = /^[\w-]+\/gitwok-auth$/;
+const repositoryPattern = /^[\w-]+\/ghrew-auth$/;
 export const mailboxConfigSchema = z.object({
   version: z.literal(1),
   repository: z.string().regex(repositoryPattern),
@@ -39,9 +39,9 @@ export async function mailboxConfig(
   signal?: AbortSignal,
 ): Promise<MailboxConfig> {
   if (!repositoryPattern.test(repository))
-    throw new Error("Use organization/gitwok-auth.");
+    throw new Error("Use organization/ghrew-auth.");
   const response = await fetch(
-    `https://api.github.com/repos/${repository}/contents/gitwok-auth.json`,
+    `https://api.github.com/repos/${repository}/contents/ghrew-auth.json`,
     {
       headers: { Accept: "application/vnd.github.raw+json" },
       credentials: "omit",
@@ -237,7 +237,7 @@ export async function vaultRequest<T>(
   );
   if (!response.ok)
     throw new Error(
-      "Could not submit the vault request. The workspace App needs Issues write permission on gitwok-auth.",
+      "Could not submit the vault request. The workspace App needs Issues write permission on ghrew-auth.",
     );
   pending.issue = (await response.json()).number;
   for (let attempt = 0; attempt < 120; attempt++) {

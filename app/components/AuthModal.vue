@@ -26,13 +26,13 @@ const emit = defineEmits<{
     v-model:open="open"
     :dismissible="dismissible === true"
     :close="dismissible === true"
-    title="Your team, in conversation."
+    title="Your crew on GitHub."
     description="A shared place to talk, backed by your GitHub Discussions."
     :ui="{ content: 'auth-modal', header: 'auth-header', body: 'auth-body' }"
   >
     <template #title>
-      <span class="brand"><BrandMark /><span>GitWok</span></span>
-      <span class="auth-headline">Your team,<br />in conversation.</span>
+      <span class="brand"><BrandMark /><span>Ghrew</span></span>
+      <span class="auth-headline">Your crew,<br />on GitHub.</span>
     </template>
     <template #body>
       <div class="auth-points">
@@ -131,7 +131,7 @@ const emit = defineEmits<{
       </p>
       <details v-if="!requestUrl" class="mb-4 text-sm">
         <summary class="cursor-pointer text-muted">
-          Use your organization’s GitWok
+          Use your organization’s Ghrew
         </summary>
         <div class="mt-3 space-y-3">
           <UFormField
@@ -139,7 +139,7 @@ const emit = defineEmits<{
             description="Your team’s public GitHub sign-in mailbox."
             ><UInput
               v-model="mailbox"
-              placeholder="your-org/gitwok-auth"
+              placeholder="your-org/ghrew-auth"
               class="w-full"
           /></UFormField>
           <UButton
@@ -172,7 +172,7 @@ const emit = defineEmits<{
         />
         <UButton
           label="Source code"
-          to="https://github.com/inchidev/gitwok"
+          to="https://github.com/inchidev/ghrew"
           target="_blank"
           rel="noopener noreferrer"
           color="neutral"

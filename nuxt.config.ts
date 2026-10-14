@@ -3,14 +3,14 @@ import { existsSync, readFileSync } from "node:fs";
 import { z } from "zod";
 
 // Public configuration for independent template copies. No credentials belong here.
-const clientConfig = existsSync("gitwok-client.json")
+const clientConfig = existsSync("ghrew-client.json")
   ? z
       .object({
         version: z.literal(1),
-        authRepository: z.string().regex(/^[\w-]+\/gitwok-auth$/),
+        authRepository: z.string().regex(/^[\w-]+\/ghrew-auth$/),
         defaultRepository: z.string().regex(/^[\w-]+\/[\w.-]+$/),
       })
-      .parse(JSON.parse(readFileSync("gitwok-client.json", "utf8")))
+      .parse(JSON.parse(readFileSync("ghrew-client.json", "utf8")))
   : null;
 
 export default defineNuxtConfig({
@@ -36,13 +36,13 @@ export default defineNuxtConfig({
   app: {
     baseURL: process.env.BASE_PATH || "/",
     head: {
-      title: "GitWok — your team, in conversation",
+      title: "Ghrew — your crew on GitHub",
       htmlAttrs: { lang: "en" },
       meta: [
         {
           name: "description",
           content:
-            "A shared place to talk, backed by your team’s GitHub Discussions.",
+            "Your crew on GitHub. Free, open-source conversations for people and agents.",
         },
         { name: "referrer", content: "no-referrer" },
       ],
@@ -58,7 +58,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       oauthBrokerUrl: "",
-      creatorRepository: "gitwok-sandbox/gitwok-auth",
+      creatorRepository: "ghrew-sandbox/ghrew-auth",
       defaultRepository: clientConfig?.defaultRepository || "",
       authRepository: clientConfig?.authRepository || "",
     },
