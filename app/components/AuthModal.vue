@@ -6,6 +6,9 @@ const props = defineProps<{
   deviceCode?: string;
   waiting?: boolean;
   mailboxRepository?: string;
+  hideCreate?: boolean;
+  dismissible?: boolean;
+  sandbox?: boolean;
 }>();
 const mailbox = ref(props.mailboxRepository || "");
 const { copy, copied } = useClipboard();
@@ -21,8 +24,8 @@ const emit = defineEmits<{
 <template>
   <UModal
     v-model:open="open"
-    :dismissible="false"
-    :close="false"
+    :dismissible="dismissible === true"
+    :close="dismissible === true"
     title="Your team, in conversation."
     description="A shared place to talk, backed by your GitHub Discussions."
     :ui="{ content: 'auth-modal', header: 'auth-header', body: 'auth-body' }"
@@ -41,8 +44,14 @@ const emit = defineEmits<{
         </p>
         <p>
           <UIcon name="i-lucide-lock-keyhole" /><span
-            ><strong>Your team’s organization.</strong> Public conversations and
-            an administrator-owned private vault.</span
+            ><strong>{{
+              sandbox ? "An open sandbox." : "Your team’s organization."
+            }}</strong>
+            {{
+              sandbox
+                ? "Try public channels, private groups and direct messages."
+                : "Public conversations and an administrator-owned private vault."
+            }}</span
           >
         </p>
         <p>
@@ -141,6 +150,18 @@ const emit = defineEmits<{
           />
         </div>
       </details>
+      <p v-if="sandbox" class="text-muted text-sm">
+        Anyone with GitHub can join. Sandbox administrators can read private
+        conversations.
+      </p>
+      <UButton
+        v-if="!hideCreate"
+        to="/create/"
+        label="Create your own workspace"
+        variant="outline"
+        block
+        class="mt-4"
+      />
       <div class="auth-footer">
         <UButton
           label="Explore the local preview"

@@ -81,7 +81,9 @@ for (let attempt = 0; attempt < 120; attempt++) {
         await writeFile(
           creator
             ? "artifacts/live-auth/creator-session.json"
-            : "artifacts/live-auth/session.json",
+            : repository.startsWith("gitwok-sandbox/")
+              ? "artifacts/live-auth/sandbox-session.json"
+              : "artifacts/live-auth/session.json",
           JSON.stringify(reply),
           { mode: 0o600 },
         );

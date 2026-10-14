@@ -150,7 +150,7 @@ describe("encrypted mailbox", () => {
 });
 
 function vaultFixture() {
-  const membership = {
+  const membership: import("../shared/vault").VaultMembers = {
     version: 1,
     organization: "acme",
     admins: [10],
@@ -186,6 +186,17 @@ function vaultFixture() {
     calls.push(String(url));
     if (String(url).includes("/collaborators?"))
       return Response.json(collaborators);
+    if (
+      String(url).includes("/contents/.gitwok/members.json") &&
+      init?.method === "PUT"
+    ) {
+      const body = JSON.parse(String(init.body));
+      Object.assign(
+        membership,
+        JSON.parse(Buffer.from(body.content, "base64").toString()),
+      );
+      return Response.json({ content: { sha: "updated" } });
+    }
     if (String(url).includes("/contents/.gitwok/members.json"))
       return Response.json({
         sha: "members-sha",
@@ -411,5 +422,96 @@ describe("administrator-only vault", () => {
           fixture.fetcher,
         ),
       ).rejects.toThrow("administrator");
+  });
+});
+
+describe("open sandbox registration", () => {
+  const settings = { repository: "acme/gitwok-vault" };
+  const actor = { id: 99, login: "visitor" };
+  it("does not allow self-registration in an ordinary workspace", async () => {
+    const f = vaultFixture();
+    await expect(
+      executeVault(settings, actor, { op: "join" }, "join", "token", f.fetcher),
+    ).rejects.toThrow("not a member");
+    expect(f.membership.members.some((m) => m.id === 99)).toBe(false);
+  });
+  it("registers only the authenticated actor, remains idempotent and hides existing private channels", async () => {
+    const f = vaultFixture();
+    f.membership.openRegistration = true;
+    for (let i = 0; i < 2; i++)
+      await executeVault(
+        settings,
+        actor,
+        { op: "join", id: 10, login: "admin" },
+        "join",
+        "token",
+        f.fetcher,
+      );
+    expect(f.membership.members.filter((m) => m.id === 99)).toEqual([actor]);
+    expect(
+      await executeVault(
+        settings,
+        actor,
+        { op: "list" },
+        "list",
+        "token",
+        f.fetcher,
+      ),
+    ).toEqual({ channels: [] });
+  });
+  it("audits vault access before saving a new member", async () => {
+    const f = vaultFixture();
+    f.membership.openRegistration = true;
+    f.collaborators.push({ id: 3 });
+    await expect(
+      executeVault(settings, actor, { op: "join" }, "join", "token", f.fetcher),
+    ).rejects.toThrow("restricted to workspace administrators");
+    expect(f.membership.members.some((m) => m.id === 99)).toBe(false);
+  });
+  it("prevents a removed member from rejoining an open workspace", async () => {
+    const f = vaultFixture();
+    f.membership.openRegistration = true;
+    await executeVault(
+      settings,
+      { id: 10, login: "admin" },
+      { op: "remove", userId: 1 },
+      "remove",
+      "token",
+      f.fetcher,
+    );
+    await expect(
+      executeVault(
+        settings,
+        { id: 1, login: "alice" },
+        { op: "join" },
+        "join",
+        "token",
+        f.fetcher,
+      ),
+    ).rejects.toThrow("not a member");
+    expect(f.membership.blocked).toContain(1);
+  });
+  it("lets sandbox members create a private group without granting others access", async () => {
+    const f = vaultFixture();
+    f.membership.memberPrivateChannels = true;
+    await executeVault(
+      settings,
+      { id: 1, login: "alice" },
+      { op: "create", kind: "private", name: "Small group", members: [2] },
+      "group",
+      "token",
+      f.fetcher,
+    );
+    expect(JSON.parse(f.discussions.at(-1)!.body).members).toEqual([1, 2]);
+    expect(
+      await executeVault(
+        settings,
+        { id: 3, login: "eve" },
+        { op: "list" },
+        "list",
+        "token",
+        f.fetcher,
+      ),
+    ).toEqual({ channels: [] });
   });
 });

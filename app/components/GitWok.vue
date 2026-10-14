@@ -62,11 +62,7 @@ const sources = computed(() => {
         !["gitwok-vault", "gitwok-auth"].includes(r.full_name.split("/")[1]!),
     )
     .map((r) => r.full_name);
-  return [
-    ...new Set(
-      auth.activeMailbox.value?.vault ? all : [...all, repository.value],
-    ),
-  ].filter(
+  return [...new Set([...all, repository.value])].filter(
     (value) =>
       !value.endsWith("/gitwok-vault") && !value.endsWith("/gitwok-auth"),
   );
@@ -79,7 +75,7 @@ const vaultMailbox = computed(() =>
     : null,
 );
 const chat = useChat(
-  auth.token,
+  computed(() => (auth.installer.value ? "" : auth.token.value)),
   login,
   preview,
   repository,
@@ -125,7 +121,7 @@ async function conversationCreated(channel?: Channel) {
   } else await chat.channelsQuery.refetch();
 }
 watch(auth.installer, (value) => {
-  if (value) setupOpen.value = true;
+  if (value) void navigateTo("/create/");
 });
 const channelsOpen = ref(false);
 const appError = ref("");
@@ -211,9 +207,7 @@ const conversationMenu = computed(() =>
         {
           label: "Create workspace",
           icon: "i-lucide-plus",
-          onSelect: () => {
-            setupOpen.value = true;
-          },
+          onSelect: () => navigateTo("/create/"),
         },
         {
           label: "Projects and issues",
@@ -741,6 +735,7 @@ function dayLabel(index: number) {
       </aside>
     </Transition>
     <AuthModal
+      :sandbox="auth.mailboxRepository.value === 'gitwok-sandbox/gitwok-auth'"
       v-model:open="authOpen"
       :busy="auth.busy.value"
       :error="auth.error.value"
@@ -761,7 +756,7 @@ function dayLabel(index: number) {
       :public-only="Boolean(auth.activeMailbox.value?.vault)"
       @connect="connect"
       @install="installApp"
-      @create="setupOpen = true"
+      @create="navigateTo('/create/')"
     />
     <OwnClientModal v-model:open="ownOpen" />
     <SetupModal

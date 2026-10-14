@@ -15,6 +15,8 @@ export interface MailboxConfig {
   appId?: string;
   creatorClientId?: string;
   creatorAppSlug?: string;
+  openRegistration?: boolean;
+  memberPrivateChannels?: boolean;
 }
 export interface MailboxRequest {
   id: string;

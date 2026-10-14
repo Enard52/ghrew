@@ -20,8 +20,10 @@ const messageSchema = z.object({
   url: z.string(),
 });
 const pendingSends = new Map<string, string>();
+const joined = new Set<string>();
 export function clearVaultSends() {
   pendingSends.clear();
+  joined.clear();
 }
 export class VaultTransport implements ChatTransport {
   constructor(
@@ -29,6 +31,12 @@ export class VaultTransport implements ChatTransport {
     private token: string,
   ) {}
   async listChannels(signal?: AbortSignal): Promise<Channel[]> {
+    // The server uses its private member policy; public config only enables the UI flow.
+    const key = `${this.config.repository}:${this.token}`;
+    if (this.config.openRegistration && !joined.has(key)) {
+      await vaultRequest(this.config, this.token, { op: "join" }, signal);
+      joined.add(key);
+    }
     return z
       .object({ channels: z.array(channelSchema) })
       .parse(
@@ -76,22 +84,20 @@ export class VaultTransport implements ChatTransport {
     pendingSends.set(key, nonce);
     if (pendingSends.size > 256)
       pendingSends.delete(pendingSends.keys().next().value!);
-    const message = z
-      .object({ message: messageSchema })
-      .parse(
-        await vaultRequest(
-          this.config,
-          this.token,
-          {
-            op: "send",
-            conversation: channelId,
-            body,
-            parentId: parentId || undefined,
-          },
-          undefined,
-          nonce,
-        ),
-      ).message;
+    const message = z.object({ message: messageSchema }).parse(
+      await vaultRequest(
+        this.config,
+        this.token,
+        {
+          op: "send",
+          conversation: channelId,
+          body,
+          parentId: parentId || undefined,
+        },
+        undefined,
+        nonce,
+      ),
+    ).message;
     pendingSends.delete(key);
     return message;
   }

@@ -22,6 +22,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
     publicKey: server.publicKey,
     vault: "acme/gitwok-vault",
     appId: "123",
+    openRegistration: true,
   };
   await page.addInitScript(() => {
     localStorage.setItem("gitwok:auth-repository:v1", "acme/gitwok-auth");
@@ -76,7 +77,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
       return respond(config);
     if (path === "/user") return respond({ id: 1, login: "alice" });
     if (path === "/user/installations")
-      return respond({ total_count: 1, installations: [{ id: 1 }] });
+      return respond({ total_count: 0, installations: [] });
     if (path === "/user/installations/1/repositories")
       return respond({
         total_count: 2,
@@ -178,6 +179,7 @@ test("GitHub-only sign-in and private messages keep vault credentials and plaint
             },
           ],
         };
+      else if (operation.op === "join") result = { joined: true };
       else if (operation.op === "read") result = { messages };
       else if (operation.op === "send") {
         const message = {

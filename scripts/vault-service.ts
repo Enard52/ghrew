@@ -127,7 +127,14 @@ export async function executeVault(
   )
     throw new Error("Vault membership belongs to a different workspace.");
   const admin = membership.admins.includes(actor.id);
-  if (!admin && !membership.members.some((m) => m.id === actor.id))
+  const member = membership.members.some((m) => m.id === actor.id);
+  if (!admin && (membership.blocked || []).includes(actor.id))
+    throw new Error("You are not a member of this workspace.");
+  if (
+    !admin &&
+    !member &&
+    !(operation.op === "join" && membership.openRegistration === true)
+  )
     throw new Error("You are not a member of this workspace.");
   // Include inherited organization and team access, not just direct invitations.
   // Fail closed if GitHub cannot prove that only declared administrators can read the repo.
@@ -146,6 +153,23 @@ export async function executeVault(
       );
     if (collaborators.length < 100) break;
   }
+  if (operation.op === "join") {
+    if (!admin && !member) {
+      membership.members.push({ id: actor.id, login: actor.login });
+      await api(
+        `/repos/${settings.repository}/contents/.gitwok/members.json`,
+        "PUT",
+        {
+          message: "Register GitWok member",
+          sha: memberFile.sha,
+          content: Buffer.from(JSON.stringify(membership, null, 2)).toString(
+            "base64",
+          ),
+        },
+      );
+    }
+    return { joined: true };
+  }
   if (operation.op === "members")
     return { members: membership.members, admins: membership.admins };
   if (operation.op === "remove") {
@@ -155,6 +179,9 @@ export async function executeVault(
       throw new Error(
         "Administrators cannot be removed through the chat interface.",
       );
+    membership.blocked = [
+      ...new Set([...(membership.blocked || []), operation.userId]),
+    ];
     membership.members = membership.members.filter(
       (m) => m.id !== operation.userId,
     );
@@ -175,6 +202,9 @@ export async function executeVault(
     if (!admin)
       throw new Error("Only workspace administrators can invite members.");
     const member = await api(`/users/${operation.login}`);
+    membership.blocked = (membership.blocked || []).filter(
+      (id) => id !== member.id,
+    );
     const existing = membership.members.find((m) => m.id === member.id);
     if (existing) existing.login = member.login;
     else membership.members.push({ id: member.id, login: member.login });
@@ -246,7 +276,11 @@ export async function executeVault(
   });
   if (operation.op === "list") return { channels: visible.map(channel) };
   if (operation.op === "create") {
-    if (operation.kind === "private" && !admin)
+    if (
+      operation.kind === "private" &&
+      !admin &&
+      membership.memberPrivateChannels !== true
+    )
       throw new Error("Only administrators can create private channels.");
     const ids = [...new Set([...operation.members, actor.id])].sort(
       (a, b) => a - b,

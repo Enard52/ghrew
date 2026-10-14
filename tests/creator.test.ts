@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { createWorkspaceRepositories } from "../app/lib/creator";
-afterEach(() => vi.unstubAllGlobals());
+import {
+  createWorkspaceRepositories,
+  waitForPagesDeployment,
+} from "../app/lib/creator";
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 const plan = {
   organization: "acme",
   clientUrl: "https://example.test/",
@@ -81,5 +87,58 @@ describe("workspace installer", () => {
       createWorkspaceRepositories("installer-token", plan, () => {}),
     ).rejects.toThrow("already exists");
     expect(calls.every((call) => call.method === "GET")).toBe(true);
+  });
+});
+
+describe("own client deployment", () => {
+  it("does not mistake a previous successful deployment for the requested revision", async () => {
+    vi.useFakeTimers();
+    let checks = 0;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          workflow_runs:
+            ++checks === 1
+              ? [
+                  {
+                    head_sha: "old",
+                    status: "completed",
+                    conclusion: "success",
+                  },
+                ]
+              : [
+                  {
+                    head_sha: "new",
+                    status: "completed",
+                    conclusion: "success",
+                  },
+                ],
+        }),
+      ),
+    );
+    const waiting = waitForPagesDeployment(
+      "token",
+      "acme/gitwok-client",
+      "new",
+    );
+    await vi.advanceTimersByTimeAsync(2000);
+    await waiting;
+    expect(checks).toBe(2);
+  });
+  it("reports a failed Pages workflow instead of completing installation", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        Response.json({
+          workflow_runs: [
+            { head_sha: "new", status: "completed", conclusion: "failure" },
+          ],
+        }),
+      ),
+    );
+    await expect(
+      waitForPagesDeployment("token", "acme/gitwok-client", "new"),
+    ).rejects.toThrow("Pages deployment failed");
   });
 });

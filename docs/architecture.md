@@ -65,7 +65,8 @@ independently; administrators must restrict installations as well as human grant
 The member directory uses immutable GitHub IDs. An administrator adds/removes
 GitWok members without granting them vault repository access. Each request checks
 current membership, then conversation membership. Administrators may create
-private channels. Members may create DMs with exactly one other current member;
+private channels. A sandbox can explicitly enable `memberPrivateChannels` in
+its private member directory to let registered members create private groups. Members may create DMs with exactly one other current member;
 a canonical sorted pair ID reuses an existing DM. Removed members lose future
 access even if old conversation metadata still includes their ID. Already
 received content cannot be recalled.
@@ -141,3 +142,24 @@ endpoint is provided by Actions.
 - [Repository collaborators and inherited access](https://docs.github.com/en/rest/collaborators/collaborators#list-repository-collaborators)
 - [Actions concurrency](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
 - [Discussions GraphQL](https://docs.github.com/en/graphql/guides/using-the-graphql-api-for-discussions)
+
+## Open sandbox and installer entry
+
+The shared demo belongs to `gitwok-sandbox`; `inchidev/gitwok` remains source code.
+Its public GitHub App accepts authorization from people outside the organization.
+After sign-in the client submits an encrypted `join` operation once per session.
+Only `openRegistration: true` in the private member directory enables this
+operation for outsiders. The public config flag only enables the client flow.
+The Action uses the GitHub issue actor's immutable ID and login, audits vault
+access before registering, and serializes joins with other vault mutations.
+Joining gives no GitHub repository or organization membership, administrator
+role, or existing conversation membership. A removed user is blocked from
+self-registration until an administrator explicitly invites them again.
+
+`/create/` is available before signing in to the sandbox. Creator authorization
+uses the configured shared Creator mailbox, independently of a team's current
+chat session. The setup checkpoint and optional Pages choice survive reloads in
+the same browser tab. The final step uses the team's own user token to request
+vault members through Actions and checks the public chat repository. A generated
+configuration alone is not treated as verified. Closing the tab during a partial
+registration can lose recovery material; complete it in the same tab.

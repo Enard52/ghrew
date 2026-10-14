@@ -7,6 +7,9 @@ export interface VaultMembers {
   organization: string;
   admins: number[];
   members: VaultActor[];
+  openRegistration?: boolean;
+  memberPrivateChannels?: boolean;
+  blocked?: number[];
 }
 export interface VaultConversation {
   version: 1;
@@ -21,6 +24,7 @@ export type VaultOperation =
   | { op: "send"; conversation: string; body: string; parentId?: string }
   | { op: "create"; kind: "private" | "dm"; name: string; members: number[] }
   | { op: "members" }
+  | { op: "join" }
   | { op: "invite"; login: string }
   | { op: "remove"; userId: number };
 // Membership is enforced on every request, including requests already queued in Actions.
@@ -28,7 +32,8 @@ export function parseVaultOperation(input: unknown): VaultOperation {
   if (!input || typeof input !== "object")
     throw new Error("Invalid vault operation.");
   const value = input as Record<string, unknown>;
-  if (value.op === "list" || value.op === "members") return { op: value.op };
+  if (value.op === "list" || value.op === "members" || value.op === "join")
+    return { op: value.op };
   if (
     value.op === "invite" &&
     typeof value.login === "string" &&
@@ -93,6 +98,13 @@ export function validateMembers(input: unknown): VaultMembers {
     !Array.isArray(value.admins) ||
     !value.admins.length ||
     !value.admins.every((id) => Number.isSafeInteger(id) && id > 0) ||
+    (value.openRegistration !== undefined &&
+      typeof value.openRegistration !== "boolean") ||
+    (value.memberPrivateChannels !== undefined &&
+      typeof value.memberPrivateChannels !== "boolean") ||
+    (value.blocked !== undefined &&
+      (!Array.isArray(value.blocked) ||
+        !value.blocked.every((id) => Number.isSafeInteger(id) && id > 0))) ||
     !Array.isArray(value.members) ||
     !value.members.every(
       (m) =>

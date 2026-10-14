@@ -24,6 +24,8 @@ export const mailboxConfigSchema = z.object({
   appId: z.string().optional(),
   creatorClientId: z.string().optional(),
   creatorAppSlug: z.string().optional(),
+  openRegistration: z.boolean().optional(),
+  memberPrivateChannels: z.boolean().optional(),
 });
 export interface PendingMailbox {
   config: MailboxConfig;

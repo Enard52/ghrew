@@ -58,9 +58,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       oauthBrokerUrl: "",
+      creatorRepository: "gitwok-sandbox/gitwok-auth",
       defaultRepository: clientConfig?.defaultRepository || "",
       authRepository: clientConfig?.authRepository || "",
     },
   },
+  nitro: { prerender: { routes: ["/create/"] } },
   typescript: { strict: true },
 });

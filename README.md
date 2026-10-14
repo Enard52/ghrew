@@ -2,8 +2,9 @@
 
 An experimental team chat backed by GitHub Discussions, with a Nuxt 4 static
 client on GitHub Pages. A GitHub organization is a workspace. Every participant
-signs in with their own GitHub account. The default private workspace App
-requires participants to be members of that GitHub organization.
+signs in with their own GitHub account. The shared sandbox uses a public App and open GitWok registration, so visitors
+do not need to join its GitHub organization. Ordinary team installations use a
+private App and require organization membership.
 
 ## Workspace layout
 
@@ -35,10 +36,28 @@ Secrets. Public conversation requests go directly to GitHub. Actions is still
 server-side execution: this replaces an always-running server with queued jobs,
 not with zero compute. There is no websocket realtime, presence or typing.
 
+## Try the sandbox
+
+[Open GitWok](https://gitwok.inchi.dev/?auth=gitwok-sandbox/gitwok-auth&workspace=gitwok-sandbox/gitwok-chat).
+The sandbox lives in `gitwok-sandbox`, separately from this source repository.
+Anyone with GitHub can sign in and join. Public channels are visible to everyone;
+private groups and DMs are restricted to their participants and sandbox
+administrators. Sandbox members can create private groups.
+
 ## Create your workspace
 
-The installer supports a global Creator App for initial provisioning and a local
-CLI alternative. Each workspace then uses its own GitHub App and keys.
+Open [the setup wizard](https://gitwok.inchi.dev/create/), install and authorize
+GitWok Creator in your organization, then choose the shared site or your own
+Pages client. The wizard restores progress after a reload in the same tab and
+checks administrator sign-in, vault access and public Discussions before offering
+the workspace link. An own-client installation also waits for its Pages workflow
+to succeed. GitHub still requires App creation/installation approvals
+and manually enabling Device Flow. Keep the setup tab open until completion.
+
+The installer also supports a local CLI alternative. Each workspace uses its own
+GitHub App and keys. A shared frontend can access your browser session and
+decrypted messages; your own Pages deployment lets you control the client code
+and updates. Revoking Creator removes its provisioning access.
 
 ```sh
 npm ci
@@ -78,7 +97,7 @@ Unit and browser tests cover encryption, identity binding, vault permissions,
 installer guards, public/private messaging, logout, drafts, threads and phone
 navigation. Browser APIs are mocked: those checks do not prove a live App
 registration, GitHub authorization or deployment. Live authorization, vault provisioning, encrypted private writes, client reads
-and logout have been verified separately in `inchidev`. A new team's installation
+and logout have been verified separately in `inchidev`. A new team's browser installation
 and a second participant's access still need their own live verification.
 
 ## Stack, storage and updates

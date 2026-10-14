@@ -26,6 +26,7 @@ const administrator = JSON.parse(
 let plan = {
   organization,
   ownClient: args.includes("--own-client"),
+  publicApp: args.includes("--public-app"),
   clientUrl: args.includes("--own-client")
     ? `https://${organization}.github.io/gitwok-client/`
     : "https://gitwok.inchi.dev/",
@@ -38,7 +39,8 @@ try {
   if (
     saved.organization === organization &&
     saved.administrator.id === administrator.id &&
-    saved.ownClient === plan.ownClient
+    saved.ownClient === plan.ownClient &&
+    Boolean(saved.publicApp) === plan.publicApp
   )
     plan = saved;
 } catch (error) {
@@ -115,7 +117,7 @@ const server = createServer(async (req, res) => {
     redirect_url: base + "/callback",
     callback_urls: [plan.clientUrl],
     setup_url: plan.clientUrl,
-    public: false,
+    public: plan.publicApp,
     hook_attributes: { url: plan.clientUrl + "unused-webhook", active: false },
     default_permissions: {
       contents: "write",

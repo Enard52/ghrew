@@ -263,7 +263,7 @@ export function beginAppRegistration(plan: SetupPlan) {
     url: plan.clientUrl,
     redirect_url: redirect.href,
     callback_urls: [plan.clientUrl],
-    setup_url: plan.clientUrl,
+    setup_url: redirect.origin + redirect.pathname,
     hook_attributes: {
       url: new URL("unused-webhook", plan.clientUrl).href,
       active: false,
@@ -482,7 +482,7 @@ export async function publishOwnClient(
   }
   if (!ready)
     throw new Error("Client repository is still being generated. Retry setup.");
-  await putFile(
+  const configuredClient = await putFile(
     token,
     repository,
     "gitwok-client.json",
@@ -519,6 +519,37 @@ export async function publishOwnClient(
     `/repos/${repository}/actions/workflows/pages.yml/dispatches`,
     "POST",
     { ref: "main", inputs: { custom_domain: "" } },
+  );
+  if (typeof configuredClient.commit?.sha !== "string")
+    throw new Error("Could not identify the client deployment revision.");
+  onStep("Waiting for your GitHub Pages deployment…");
+  await waitForPagesDeployment(token, repository, configuredClient.commit.sha);
+}
+
+export async function waitForPagesDeployment(
+  token: string,
+  repository: string,
+  head: string,
+) {
+  for (let attempt = 0; attempt < 90; attempt++) {
+    const result = await adminApi(
+      token,
+      `/repos/${repository}/actions/workflows/pages.yml/runs?event=workflow_dispatch&per_page=20`,
+    );
+    const run = result.workflow_runs?.find(
+      (value: { head_sha: string }) => value.head_sha === head,
+    );
+    if (run?.status === "completed") {
+      if (run.conclusion !== "success")
+        throw new Error(
+          "Your Pages deployment failed. Open the client repository’s Actions tab, fix the reported problem and retry setup.",
+        );
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+  throw new Error(
+    "Pages is still building. Keep the setup tab open and retry setup in a few minutes.",
   );
 }
 

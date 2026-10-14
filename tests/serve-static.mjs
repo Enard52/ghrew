@@ -14,7 +14,10 @@ const mime = {
 };
 createServer(async (request, response) => {
   const pathname = new URL(request.url, "http://127.0.0.1:5179").pathname;
-  const path = resolve(root, `.${pathname === "/" ? "/index.html" : pathname}`);
+  const path = resolve(
+    root,
+    `.${pathname.endsWith("/") ? pathname + "index.html" : pathname}`,
+  );
   if (!path.startsWith(`${root}/`)) {
     response.writeHead(403).end();
     return;

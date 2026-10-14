@@ -1,5 +1,5 @@
 <template>
   <UApp>
-    <GitWok />
+    <NuxtPage />
   </UApp>
 </template>

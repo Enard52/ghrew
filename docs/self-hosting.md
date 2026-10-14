@@ -45,6 +45,13 @@ must trust the JavaScript served by whichever client they use.
 
 ## Browser provisioning and the Creator App
 
+Start at `/create/` before entering a chat. Choose the shared site for a quick
+start or publish your own Pages client to control the JavaScript and updates.
+Keep this tab open through registration, installation and verification. A reload
+restores its checkpoint. The master checks the runtime sign-in and vault through
+Actions before showing the workspace link. An own-client installation waits
+for the Pages workflow to succeed.
+
 The shared site's browser wizard needs a separately registered public **Creator
 App**. A maintainer can prepare it using `node scripts/register-creator.mjs`, then
 review the App registration on GitHub and enable Device Flow. That helper updates
