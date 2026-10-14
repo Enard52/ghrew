@@ -53,6 +53,10 @@ client is an early preview; use `/?preview=1` for sample conversations and local
 drafts. Fresh sandbox authentication and the shared Creator are not provisioned.
 Old GitWok live checks do not prove Ghrew authentication or private messaging.
 
+After GitHub's DNS check succeeded, certificate provisioning was restarted from
+Chrome Pages settings. The certificate was approved, HTTPS returned 200, and
+HTTPS enforcement was enabled. The domain now serves the preview over HTTPS.
+
 The [roadmap](../ROADMAP.md) records the free-product decision, one-click
 deployment goal and planned Copilot workflow. Agent integration and the proposed
 OAuth/backend redesign have not been implemented.
