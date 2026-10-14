@@ -1,0 +1,42 @@
+{
+  "name": "gitwok",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A team chat client for GitHub Discussions.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "nuxt dev --host 127.0.0.1",
+    "build": "nuxt generate",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck && tsc -p oauth/tsconfig.json",
+    "preview": "nuxt preview --host 127.0.0.1",
+    "test": "vitest run tests/*.test.ts",
+    "test:e2e": "playwright test",
+    "check": "npm run test && npm run typecheck && npm run build",
+    "build:oauth": "esbuild oauth/worker.ts --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=dist/oauth-worker.mjs"
+  },
+  "dependencies": {
+    "@fontsource/be-vietnam-pro": "^5.2.8",
+    "@nuxt/ui": "4.11.3",
+    "@tanstack/vue-query": "5.104.2",
+    "@vueuse/core": "15.0.0",
+    "@vueuse/nuxt": "15.0.0",
+    "dayjs": "1.11.23",
+    "nuxt": "4.6.1",
+    "tailwindcss": "4.3.3",
+    "vue": "3.5.44",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261014.1",
+    "@iconify-json/lucide": "1.2.144",
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^24.19.2",
+    "esbuild": "0.28.2",
+    "prettier": "^3.9.10",
+    "typescript": "5.9.3",
+    "vitest": "^5.0.4",
+    "vue-tsc": "3.3.13"
+  }
+}

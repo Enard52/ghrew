@@ -1,0 +1,302 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/vue-query";
+import {
+  useLocalStorage,
+  useOnline,
+  useDocumentVisibility,
+} from "@vueuse/core";
+import { z } from "zod";
+import type { Message } from "../../shared/chat";
+import { GitHubError, GitHubTransport } from "~/lib/github";
+import { previewChannels, previewMessages } from "~/lib/preview";
+
+export const messageBodySchema = z
+  .string()
+  .trim()
+  .min(1, "Write a message first.")
+  .max(60_000, "This message is too long for GitHub.");
+
+export function useChat(
+  token: Ref<string>,
+  login: Ref<string>,
+  preview: Ref<boolean>,
+  repository: Ref<string>,
+) {
+  const queryClient = useQueryClient();
+  const online = useOnline();
+  const visibility = useDocumentVisibility();
+  const selectedChannel = ref(
+    new URL(window.location.href).searchParams.get("channel") || "",
+  );
+  const selectedThread = ref("");
+  const search = ref("");
+  const localMessages = useLocalStorage<Message[]>(
+    "gitwok:preview-messages:v2",
+    previewMessages(),
+  );
+  const drafts = useLocalStorage<Record<string, string>>(
+    "gitwok:drafts:v2",
+    {},
+  );
+  const authenticated = computed(() =>
+    Boolean(token.value && login.value && !preview.value),
+  );
+  const scope = computed(() =>
+    preview.value ? "preview" : `${login.value}:${repository.value}`,
+  );
+  const roomKey = computed(() => ["channels", login.value, repository.value]);
+  const messageKey = computed(() => [
+    "messages",
+    login.value,
+    repository.value,
+    selectedChannel.value,
+  ]);
+
+  const channelsQuery = useQuery({
+    queryKey: roomKey,
+    enabled: authenticated,
+    queryFn: ({ signal }) =>
+      new GitHubTransport(repository.value, token.value).listChannels(signal),
+    refetchInterval: (query) => {
+      if (
+        !online.value ||
+        visibility.value !== "visible" ||
+        (query.state.error instanceof GitHubError &&
+          query.state.error.status === 401)
+      )
+        return false;
+      return Math.max(
+        60_000,
+        query.state.error instanceof GitHubError
+          ? query.state.error.retryAfterMs
+          : 0,
+      );
+    },
+  });
+  const channels = computed(() =>
+    preview.value || !authenticated.value
+      ? previewChannels
+      : channelsQuery.data.value || [],
+  );
+  const messagesQuery = useQuery({
+    queryKey: messageKey,
+    enabled: computed(
+      () =>
+        authenticated.value &&
+        channels.value.some((channel) => channel.id === selectedChannel.value),
+    ),
+    queryFn: ({ signal }) =>
+      new GitHubTransport(repository.value, token.value).listMessages(
+        selectedChannel.value,
+        signal,
+      ),
+    refetchInterval: (query) => {
+      if (
+        !online.value ||
+        visibility.value !== "visible" ||
+        (query.state.error instanceof GitHubError &&
+          query.state.error.status === 401)
+      )
+        return false;
+      return Math.max(
+        20_000,
+        query.state.error instanceof GitHubError
+          ? query.state.error.retryAfterMs
+          : 0,
+      );
+    },
+  });
+  const messages = computed(() => {
+    const data =
+      preview.value || !authenticated.value
+        ? localMessages.value.filter(
+            (message) => message.channelId === selectedChannel.value,
+          )
+        : messagesQuery.data.value || [];
+    return [...data].sort(
+      (a, b) =>
+        a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id),
+    );
+  });
+  const channel = computed(() =>
+    channels.value.find((value) => value.id === selectedChannel.value),
+  );
+  const roots = computed(() =>
+    messages.value.filter(
+      (message) =>
+        !message.parentId &&
+        (!search.value ||
+          `${message.author} ${message.body}`
+            .toLowerCase()
+            .includes(search.value.toLowerCase()) ||
+          messages.value.some(
+            (reply) =>
+              reply.parentId === message.id &&
+              `${reply.author} ${reply.body}`
+                .toLowerCase()
+                .includes(search.value.toLowerCase()),
+          )),
+    ),
+  );
+  const parent = computed(() =>
+    messages.value.find(
+      (message) => message.id === selectedThread.value && !message.parentId,
+    ),
+  );
+  const replies = computed(() =>
+    messages.value.filter(
+      (message) => message.parentId === selectedThread.value,
+    ),
+  );
+  const replyCount = (id: string) =>
+    messages.value.filter((message) => message.parentId === id).length;
+  const draftKey = (parentId = "") =>
+    `${scope.value}:${selectedChannel.value}:${parentId}`;
+  const roomDraft = computed({
+    get: () => drafts.value[draftKey()] || "",
+    set: (value) => {
+      drafts.value = { ...drafts.value, [draftKey()]: value };
+    },
+  });
+  const threadDraft = computed({
+    get: () => drafts.value[draftKey(selectedThread.value)] || "",
+    set: (value) => {
+      drafts.value = {
+        ...drafts.value,
+        [draftKey(selectedThread.value)]: value,
+      };
+    },
+  });
+  const canWrite = computed(
+    () =>
+      preview.value ||
+      (authenticated.value && Boolean(channel.value) && online.value),
+  );
+
+  watch(scope, () => {
+    selectedChannel.value = "";
+    selectedThread.value = "";
+    search.value = "";
+  });
+  watch(
+    channels,
+    (value) => {
+      if (!value.some((item) => item.id === selectedChannel.value))
+        selectedChannel.value = value[0]?.id || "";
+    },
+    { immediate: true },
+  );
+  watch(selectedChannel, (id) => {
+    selectedThread.value = "";
+    search.value = "";
+    const url = new URL(window.location.href);
+    if (id) url.searchParams.set("channel", id);
+    else url.searchParams.delete("channel");
+    history.replaceState(null, "", url);
+  });
+  watch(messages, () => {
+    if (
+      selectedThread.value &&
+      !messages.value.some((message) => message.id === selectedThread.value)
+    )
+      selectedThread.value = "";
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async (input: {
+      body: string;
+      parentId: string;
+      channelId: string;
+      key: string;
+      queryKey: string[];
+      local: boolean;
+      sessionToken: string;
+      transport: GitHubTransport | null;
+    }) => {
+      const body = messageBodySchema.parse(input.body);
+      if (!input.local) {
+        if (!online.value || !input.transport)
+          throw new Error(
+            "You’re offline. Your draft is saved; send it when you reconnect.",
+          );
+        return input.transport.sendMessage(
+          input.channelId,
+          body,
+          input.parentId,
+        );
+      }
+      const time = new Date().toISOString();
+      const message: Message = {
+        id: crypto.randomUUID(),
+        channelId: input.channelId,
+        parentId: input.parentId,
+        body,
+        author: "You",
+        createdAt: time,
+        updatedAt: time,
+        status: "local",
+        url: "",
+      };
+      localMessages.value = [...localMessages.value, message];
+      return message;
+    },
+    onSuccess: (message, input) => {
+      if (!input.local && input.sessionToken !== token.value) return;
+      if (drafts.value[input.key] === input.body)
+        drafts.value = { ...drafts.value, [input.key]: "" };
+      if (!input.local) {
+        queryClient.setQueryData<Message[]>(input.queryKey, (previous) => [
+          ...(previous || []).filter((item) => item.id !== message.id),
+          message,
+        ]);
+        void queryClient.invalidateQueries({ queryKey: input.queryKey });
+      }
+    },
+  });
+  async function send(parentId = "") {
+    if (!canWrite.value || sendMutation.isPending.value) return;
+    const body = drafts.value[draftKey(parentId)] || "";
+    if (!messageBodySchema.safeParse(body).success) return;
+    try {
+      await sendMutation.mutateAsync({
+        body,
+        parentId,
+        channelId: selectedChannel.value,
+        key: draftKey(parentId),
+        queryKey: [...messageKey.value],
+        local: preview.value,
+        sessionToken: token.value,
+        transport: authenticated.value
+          ? new GitHubTransport(repository.value, token.value)
+          : null,
+      });
+    } catch {
+      /* Mutation state renders the failure; the draft stays intact. */
+    }
+  }
+  function refresh() {
+    if (!authenticated.value || !online.value) return;
+    void channelsQuery.refetch();
+    if (channel.value) void messagesQuery.refetch();
+  }
+  return {
+    online,
+    channels,
+    channel,
+    selectedChannel,
+    selectedThread,
+    search,
+    roots,
+    messages,
+    parent,
+    replies,
+    replyCount,
+    roomDraft,
+    threadDraft,
+    canWrite,
+    send,
+    refresh,
+    channelsQuery,
+    messagesQuery,
+    sendMutation,
+  };
+}

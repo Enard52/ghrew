@@ -1,0 +1,56 @@
+name: Deploy GitWok client
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom_domain:
+        description: Optional custom domain (must already be configured in Pages settings)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build reviewed static client
+        env:
+          CUSTOM_DOMAIN: ${{ inputs.custom_domain }}
+          REPOSITORY_NAME: ${{ github.event.repository.name }}
+          NUXT_PUBLIC_OAUTH_BROKER_URL: ${{ vars.OAUTH_BROKER_URL }}
+          NUXT_PUBLIC_DEFAULT_REPOSITORY: ${{ vars.DEFAULT_REPOSITORY }}
+        run: |
+          if [ -n "$CUSTOM_DOMAIN" ]; then
+            export BASE_PATH=/
+          else
+            export BASE_PATH="/$REPOSITORY_NAME/"
+          fi
+          npm run check
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: .output/public
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publish GitWok client
+        id: deployment
+        uses: actions/deploy-pages@v4

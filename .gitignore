@@ -1,5 +1,12 @@
 node_modules/
 dist/
+.nuxt/
+.nuxt-e2e/
+.nuxt-build/
+.output/
+.wrangler/
+.dev.vars
+output/
 .env
 .env.*
 !.env.example
