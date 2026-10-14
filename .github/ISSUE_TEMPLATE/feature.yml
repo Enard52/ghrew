@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an enhancement or new capability for Ghrew
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide context on what problem this solves and how you envision it working.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What problem are you trying to solve, or what outcome do you want to achieve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal & Context
+      description: How should this feature work? Describe UX, APIs, and relevant files if known.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or workarounds you have considered.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Checkable conditions that define when this feature is complete.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: false

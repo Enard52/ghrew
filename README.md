@@ -129,4 +129,4 @@ GitHub Free permits private repositories and unlimited collaborators; paid
 organization plans have their own seat billing. The legacy public auth repository uses
 standard public Actions runners; abuse and GitHub execution limits still apply.
 
-MIT licensed. [DIRECTION.md](DIRECTION.md) records the visual direction.
+MIT licensed. [DIRECTION.md](DIRECTION.md) records the visual direction. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, testing commands, issue templates, and contribution guidelines.
