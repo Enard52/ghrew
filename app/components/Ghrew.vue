@@ -579,14 +579,22 @@ function dayLabel(index: number) {
         class="notice"
         role="status"
       >
-        Private vault · updates wait for the GitHub Actions queue.
+        {{
+          auth.backend
+            ? "Private vault · access checked by your Ghrew backend."
+            : "Private vault · updates wait for the GitHub Actions queue."
+        }}
       </div>
       <div
         v-if="chat.vaultChannelsQuery.isFetching.value"
         class="notice"
         role="status"
       >
-        Checking private conversations through GitHub Actions…
+        {{
+          auth.backend
+            ? "Checking private conversations…"
+            : "Checking private conversations through GitHub Actions…"
+        }}
       </div>
       <div v-if="appError" class="notice error-notice" role="alert">
         {{ appError }}

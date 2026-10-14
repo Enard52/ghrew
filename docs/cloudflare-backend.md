@@ -107,3 +107,16 @@ Worker bundles Zod and the vault code, not a Nuxt development server.
 References: [GitHub App manifests](https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest),
 [GitHub user tokens](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app),
 [Cloudflare deploy buttons](https://developers.cloudflare.com/workers/platform/deploy-buttons/).
+
+## Sandbox verification, 2026-10-14
+
+The maintained sandbox at `ghrew.inchi.dev` uses the public
+`ghrew-sandbox-by-inchi` App, owned by `inchidev`. Its API runs in the
+`ghrew-api` Worker with D1; the existing GitHub Pages client routes `/api/*`
+through Cloudflare. Independent deployments use the single-Worker package above.
+
+Live Chrome checks confirmed manifest registration, normal owner sign-in,
+selected-repository installation, checkpointed creation of public `ghrew-chat`
+and private `ghrew-vault`, and public and private message delivery. A second
+participant and a fresh independent Cloudflare deployment still require live
+verification; mocked tests do not establish those results.
