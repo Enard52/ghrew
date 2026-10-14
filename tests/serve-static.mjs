@@ -33,4 +33,4 @@ createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end();
   }
-}).listen(5179, "127.0.0.1");
+}).listen(Number(process.env.PORT || 5179), "127.0.0.1");

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { githubFetch } from "./backend";
 import type { Channel, ChatTransport, Message } from "../../shared/chat";
 
 interface PageInfo {
@@ -91,7 +92,7 @@ export async function githubRequest<T>(
   const url = new URL(path, "https://api.github.com");
   if (url.origin !== "https://api.github.com")
     throw new GitHubError("Invalid GitHub API address.");
-  const response = await fetch(url, {
+  const response = await githubFetch(url.pathname + url.search, token, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: "application/vnd.github+json",
@@ -218,7 +219,7 @@ export class GitHubTransport implements ChatTransport {
     schema: z.ZodType<T>,
     signal?: AbortSignal,
   ): Promise<T> {
-    const response = await fetch("https://api.github.com/graphql", {
+    const response = await githubFetch("/graphql", this.token, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.token}`,

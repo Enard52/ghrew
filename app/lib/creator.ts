@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { githubFetch } from "./backend";
 import { newMailboxKey, type MailboxConfig } from "../../shared/mailbox.ts";
 
 export interface SetupPlan {
@@ -31,7 +32,7 @@ export async function adminApi(
 ): Promise<any> {
   if (!path.startsWith("/") || path.startsWith("//"))
     throw new Error("Invalid GitHub API path.");
-  const response = await fetch(`https://api.github.com${path}`, {
+  const response = await githubFetch(path, token, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,

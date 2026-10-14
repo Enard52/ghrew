@@ -206,6 +206,12 @@ export async function vaultRequest<T>(
   requestId?: string,
 ): Promise<T> {
   if (!token) throw new Error("Sign in before opening a private conversation.");
+  if (config.backend) {
+    const { backendJson } = await import("./backend");
+    return backendJson<T>("/api/vault", token, {
+      organization: config.repository.split("/")[0], operation, nonce: requestId,
+    }, signal);
+  }
   const pending = await prepareMailbox(config, operation);
   if (requestId) {
     pending.request.id = requestId;

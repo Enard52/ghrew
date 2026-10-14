@@ -34,6 +34,13 @@ This decision supersedes the paid-workspace hypotheses in
 
 ## 2. Make deployment understandable
 
+Accepted implementation direction: a small Cloudflare backend; our GitHub App
+for the shared sandbox, and an owner-controlled App for each independent
+deployment. The Worker package and guided manifest registration replace the
+mailbox/Device Flow in this mode. See [the setup guide](docs/cloudflare-backend.md)
+for the implemented flow and its validation boundaries. The earlier proposals
+below explain the design goal; live readiness still requires live verification.
+
 Target experience: **Deploy Ghrew → approve GitHub access → choose organization
 and repositories → open your workspace**. GitHub's consent and installation
 approvals remain explicit.

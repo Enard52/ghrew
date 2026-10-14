@@ -24,6 +24,7 @@ const repository = computed({
   get: () => {
     const selected =
       savedRepositories.value[login.value] ||
+      (auth.backend ? auth.activeMailbox.value?.repository : "") ||
       runtime.public.defaultRepository ||
       "inchidev/ghrew";
     const owner = selected.split("/")[0]!;
@@ -303,7 +304,7 @@ async function connect(value: string) {
   const url = new URL(window.location.href);
   url.searchParams.delete("preview");
   url.searchParams.set("workspace", value);
-  if (auth.activeMailbox.value)
+  if (auth.activeMailbox.value && !auth.backend)
     url.searchParams.set("auth", auth.activeMailbox.value.repository);
   history.replaceState(null, "", url);
 }
@@ -327,7 +328,7 @@ function signOut() {
 function shareWorkspace() {
   const url = new URL(`${window.location.origin}${runtime.app.baseURL}`);
   url.searchParams.set("workspace", repository.value);
-  if (auth.activeMailbox.value)
+  if (auth.activeMailbox.value && !auth.backend)
     url.searchParams.set("auth", auth.activeMailbox.value.repository);
   void copy(url.href);
 }
@@ -735,7 +736,8 @@ function dayLabel(index: number) {
       </aside>
     </Transition>
     <AuthModal
-      :sandbox="auth.mailboxRepository.value === 'ghrew-sandbox/ghrew-auth'"
+      :sandbox="auth.backend ? Boolean(auth.sandbox.value) : auth.mailboxRepository.value === 'ghrew-sandbox/ghrew-auth'"
+      :backend="auth.backend"
       v-model:open="authOpen"
       :busy="auth.busy.value"
       :error="auth.error.value"

@@ -32,6 +32,7 @@ jobs:
           NUXT_PUBLIC_OAUTH_BROKER_URL: ${{ vars.OAUTH_BROKER_URL }}
           NUXT_PUBLIC_DEFAULT_REPOSITORY: ${{ vars.DEFAULT_REPOSITORY }}
           NUXT_PUBLIC_AUTH_REPOSITORY: ${{ vars.AUTH_REPOSITORY }}
+          NUXT_PUBLIC_BACKEND_ENABLED: ${{ vars.BACKEND_ENABLED }}
         run: |
           if [ -n "$CUSTOM_DOMAIN" ]; then
             export BASE_PATH=/

@@ -9,6 +9,7 @@ const props = defineProps<{
   hideCreate?: boolean;
   dismissible?: boolean;
   sandbox?: boolean;
+  backend?: boolean;
 }>();
 const mailbox = ref(props.mailboxRepository || "");
 const { copy, copied } = useClipboard();
@@ -57,7 +58,7 @@ const emit = defineEmits<{
         <p>
           <UIcon name="i-lucide-sprout" /><span
             ><strong>Open source, yours to host.</strong> Start here. Move the
-            client to your own Pages whenever you like.</span
+            {{ backend ? 'whole app to your own Cloudflare account whenever you like.' : 'client to your own Pages whenever you like.' }}</span
           >
         </p>
       </div>
@@ -129,7 +130,7 @@ const emit = defineEmits<{
       <p class="auth-permissions">
         No separate password. No token to copy and paste.
       </p>
-      <details v-if="!requestUrl" class="mb-4 text-sm">
+      <details v-if="!requestUrl && !backend" class="mb-4 text-sm">
         <summary class="cursor-pointer text-muted">
           Use your organization’s Ghrew
         </summary>

@@ -93,7 +93,7 @@ async function create() {
     } else {
       if (!props.mailbox?.vault)
         throw new Error(
-          "Connect your workspace’s GitHub-only sign-in before using its vault.",
+          "Connect your workspace before using its private vault.",
         );
       const result = z
         .object({
@@ -164,11 +164,15 @@ async function create() {
         <template v-else>
           <p class="text-muted text-sm">
             Stored in the administrator-only ghrew-vault. Selected participants
-            receive encrypted responses through GitHub Actions. Workspace
-            administrators can access the vault.
+            {{
+              mailbox?.backend
+                ? "access messages through your Ghrew backend."
+                : "receive encrypted responses through GitHub Actions."
+            }}
+            Workspace administrators can access the vault.
           </p>
           <p v-if="members.isFetching.value" role="status">
-            Loading workspace members through Actions…
+            Loading workspace members…
           </p>
           <UFormField label="Participants"
             ><UCheckboxGroup

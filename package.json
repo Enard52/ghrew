@@ -9,7 +9,7 @@
     "dev": "nuxt dev --host 127.0.0.1",
     "build": "nuxt generate",
     "postinstall": "nuxt prepare",
-    "typecheck": "nuxt typecheck && tsc -p oauth/tsconfig.json && tsc -p scripts/tsconfig.json",
+    "typecheck": "nuxt typecheck && tsc -p oauth/tsconfig.json && tsc -p scripts/tsconfig.json && tsc -p backend/tsconfig.json",
     "preview": "nuxt preview --host 127.0.0.1",
     "test": "vitest run tests/*.test.ts",
     "test:e2e": "playwright test",
@@ -17,7 +17,11 @@
     "build:oauth": "esbuild oauth/worker.ts --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=dist/oauth-worker.mjs",
     "prebuild": "node scripts/build-bootstrap.mjs",
     "predev": "node scripts/build-bootstrap.mjs",
-    "setup": "node scripts/build-bootstrap.mjs && node scripts/setup-workspace.mjs"
+    "setup": "node scripts/build-bootstrap.mjs && node scripts/setup-workspace.mjs",
+    "build:worker": "node scripts/build-worker.mjs",
+    "dev:worker": "wrangler dev",
+    "deploy": "npm run build:worker && wrangler deploy",
+    "test:e2e:backend": "playwright test -c playwright.backend.config.ts"
   },
   "dependencies": {
     "@fontsource/be-vietnam-pro": "^5.2.8",
@@ -38,9 +42,21 @@
     "@playwright/test": "^1.64.0",
     "@types/node": "^24.19.2",
     "esbuild": "0.28.2",
+    "miniflare": "^5.20261012.0-beta",
     "prettier": "^3.9.10",
     "typescript": "5.9.3",
     "vitest": "^5.0.4",
-    "vue-tsc": "3.3.13"
+    "vue-tsc": "3.3.13",
+    "wrangler": "^4.151.0"
+  },
+  "cloudflare": {
+    "bindings": {
+      "DB": {
+        "description": "Stores encrypted sessions, GitHub App configuration and workspace connections. Conversation messages stay in GitHub."
+      },
+      "SETUP_TOKEN": {
+        "description": "Choose a random setup key of at least 32 characters. Enter it once on your deployed site to register your own GitHub App. Keep it: it encrypts stored credentials."
+      }
+    }
   }
 }

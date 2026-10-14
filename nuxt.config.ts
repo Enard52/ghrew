@@ -57,6 +57,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
+      backendEnabled: process.env.NUXT_PUBLIC_BACKEND_ENABLED === "true",
       oauthBrokerUrl: "",
       creatorRepository: "ghrew-sandbox/ghrew-auth",
       defaultRepository: clientConfig?.defaultRepository || "",

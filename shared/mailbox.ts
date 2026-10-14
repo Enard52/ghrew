@@ -6,6 +6,8 @@ export interface Envelope {
   data: string;
 }
 export interface MailboxConfig {
+  /** Cookie-session transport; no issue mailbox or encryption key is used. */
+  backend?: boolean;
   version: 1;
   repository: string;
   clientId: string;

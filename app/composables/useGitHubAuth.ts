@@ -25,6 +25,7 @@ import { clearVaultSends } from "~/lib/vault";
 
 export function useGitHubAuth() {
   const config = useRuntimeConfig();
+  if (config.public.backendEnabled) return useBackendAuth();
   const queryClient = useQueryClient();
   const session = shallowRef<GitHubSession | null>(null);
   const viewer = shallowRef<Viewer | null>(null);
@@ -312,6 +313,8 @@ export function useGitHubAuth() {
   onMounted(initialize);
   onUnmounted(cancelMailbox);
   return {
+    backend: false as const,
+    sandbox: ref(""),
     token,
     viewer,
     error,

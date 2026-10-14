@@ -1,5 +1,9 @@
 # Architecture
 
+> This document describes the legacy static/Actions mode. For the recommended
+> Cloudflare backend and guided owner-controlled App setup, see
+> [Cloudflare deployment](cloudflare-backend.md).
+
 ## Runtime
 
 ```text

@@ -1,5 +1,9 @@
 # Host your own Ghrew
 
+> This document describes the legacy static/Actions mode. For the recommended
+> Cloudflare backend and guided owner-controlled App setup, see
+> [Cloudflare deployment](cloudflare-backend.md).
+
 ## GitHub-only workspace
 
 Use a GitHub organization you own and Node.js 24 with the authenticated `gh` CLI.

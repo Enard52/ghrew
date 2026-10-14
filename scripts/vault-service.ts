@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { createPrivateKey, sign } from "node:crypto";
 import {
   parseVaultOperation,
@@ -24,6 +25,7 @@ export interface VaultSettings {
   repository: string;
   appId: string;
   privateKey: string;
+  checkOrganizationRole?: boolean;
 }
 export async function installationToken(
   settings: VaultSettings,
@@ -52,7 +54,7 @@ export async function installationToken(
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify({
         repositories: [settings.repository.split("/")[1]],
-        permissions: { discussions: "write", contents: "write" },
+        permissions: { discussions: "write", contents: "write", ...(settings.checkOrganizationRole ? { members: "read" } : {}) },
       }),
     },
   );
@@ -78,7 +80,7 @@ export async function installationToken(
 }
 
 export async function executeVault(
-  settings: { repository: string },
+  settings: { repository: string; organizationRole?: "admin" | "member" | "outside" },
   actor: VaultActor,
   raw: unknown,
   nonce: string,
@@ -127,6 +129,12 @@ export async function executeVault(
   )
     throw new Error("Vault membership belongs to a different workspace.");
   const admin = membership.admins.includes(actor.id);
+  if (settings.organizationRole !== undefined) {
+    if (admin && settings.organizationRole !== "admin")
+      throw new Error("Your GitHub organization administrator role has changed. Ask a current owner to review workspace access.");
+    if (!membership.openRegistration && settings.organizationRole === "outside")
+      throw new Error("You must be an active member of this GitHub organization.");
+  }
   const member = membership.members.some((m) => m.id === actor.id);
   if (!admin && (membership.blocked || []).includes(actor.id))
     throw new Error("You are not a member of this workspace.");

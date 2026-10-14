@@ -22,3 +22,5 @@ jobs:
       - run: npm run build:oauth
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - run: npx playwright test -c playwright.backend.config.ts
+      - run: npx wrangler deploy --dry-run --outdir artifacts/worker-dry-run

@@ -1,5 +1,20 @@
 # Ghrew
 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/inchidev/ghrew)
+
+The recommended installation packages the client and a small Cloudflare backend
+together. Click Deploy to Cloudflare, choose a random `SETUP_TOKEN` of at least
+32 characters, then open `/create/` on your new site. The guided setup registers
+your own GitHub App, receives its keys directly, and creates `ghrew-chat` plus
+one administrator-only `ghrew-vault`. GitHub approvals remain necessary; there
+is no Device Flow, sign-in issue, auth repository or Actions queue in this mode.
+
+The shared sandbox uses our App. An independent deployment uses **your App,
+your Cloudflare account and your GitHub repositories**, without calling our auth
+service. [Cloudflare setup and trust boundaries](docs/cloudflare-backend.md).
+
+The older static/Actions implementation below is retained as a legacy option.
+
 **Your crew on GitHub.** A free, MIT-licensed project by
 [inchi.dev](https://inchi.dev), bringing team conversations and, in the roadmap,
 agents around GitHub projects. See [the roadmap](ROADMAP.md) for the one-click
