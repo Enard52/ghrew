@@ -22,9 +22,10 @@ const savedRepositories = useLocalStorage<Record<string, string>>(
 );
 const repository = computed({
   get: () => {
+    // A server-selected workspace may have moved since this browser last visited.
     const selected =
-      savedRepositories.value[login.value] ||
       (auth.backend ? auth.activeMailbox.value?.repository : "") ||
+      savedRepositories.value[login.value] ||
       runtime.public.defaultRepository ||
       "inchidev/ghrew";
     const owner = selected.split("/")[0]!;

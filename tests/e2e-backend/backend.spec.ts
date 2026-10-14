@@ -121,9 +121,15 @@ test("an owner installs the deployment's App and creates a verified workspace", 
   expect(calls).toEqual([{ organization: "team" }]);
 });
 
-test("cookie sessions route public and private reads through the backend and sign out without browser GitHub tokens", async ({
+test("cookie sessions use the backend workspace despite a stale browser preference, preserve private reads and clear on sign-out", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "ghrew:workspaces:v2",
+      JSON.stringify({ alice: "old-team/ghrew-chat" }),
+    );
+  });
   let signedOut = false;
   const requests: { url: string; authorization: string | undefined }[] = [];
   page.on("request", (request) =>
@@ -252,6 +258,7 @@ test("cookie sessions route public and private reads through the backend and sig
     throw new Error("Unexpected API request " + path);
   });
   await page.goto("/");
+  await expect(page.locator(".workspace-switch")).toHaveText("team");
   await page.getByRole("button", { name: /Private room/ }).click();
   await expect(
     page.getByText("Only permitted participants can see this."),

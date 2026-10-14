@@ -29,20 +29,28 @@ private App and require organization membership.
 
 ## Workspace layout
 
-| Repository      | Visibility                   | Purpose                                                                       |
-| --------------- | ---------------------------- | ----------------------------------------------------------------------------- |
+The Cloudflare backend uses two repositories: public `ghrew-chat` for shared
+channels and private `ghrew-vault` for private channels and DMs. The sandbox's
+repositories live in [`ghrew-sandbox`](https://github.com/ghrew-sandbox);
+[`inchidev/ghrew`](https://github.com/inchidev/ghrew) is the OSS source. There is
+no auth repository in backend mode.
+
+### Legacy static/Actions layout
+
+| Repository     | Visibility                   | Purpose                                                                       |
+| -------------- | ---------------------------- | ----------------------------------------------------------------------------- |
 | `ghrew-chat`   | Public                       | Shared channels: Discussions, comments and threads                            |
 | `ghrew-vault`  | Private, administrators only | **All** private channels and DMs, with per-conversation membership            |
 | `ghrew-auth`   | Public                       | Encrypted sign-in and vault request mailbox; GitHub Actions executes requests |
 | `ghrew-client` | Public, optional             | A team-owned copy of the static client                                        |
 
 Ordinary participants never receive repository access or installation tokens for
-`ghrew-vault`. An Action checks the authenticated issue author's GitHub ID,
+`ghrew-vault`. In legacy mode, an Action checks the authenticated issue author's GitHub ID,
 workspace membership and conversation permissions before reading or writing the
 vault. GitHub organization owners always have administrative access; this is not
 end-to-end encryption against workspace administrators or GitHub.
 
-## Sign-in without a persistent server
+## Legacy sign-in without a persistent server
 
 The browser opens a prepared issue in the workspace's public auth repository.
 The user submits it on GitHub. An Action starts GitHub's Device Flow and returns
@@ -59,47 +67,29 @@ not with zero compute. There is no websocket realtime, presence or typing.
 
 ## Try the sandbox
 
-[Open the Ghrew preview](https://ghrew.inchi.dev/?preview=1).
-The renamed client is being established at this address. Fresh sandbox sign-in
-and workspace provisioning are not ready yet. The preview uses sample data and
-local drafts; it does not send messages to GitHub. The previous GitWok sandbox's
-live checks do not establish readiness of a new Ghrew workspace.
+[Open the Ghrew sandbox](https://ghrew.inchi.dev/) and continue with GitHub.
+Public channels live in `ghrew-sandbox/ghrew-chat`; private channels and DMs live
+in administrator-only `ghrew-sandbox/ghrew-vault`. The public
+`ghrew-sandbox-by-inchi` App is owned by `inchidev` and installed on those two
+sandbox repositories. Visitors join Ghrew without joining its GitHub organization.
+
+[Try the local demo](https://ghrew.inchi.dev/?preview=1) for sample conversations
+and browser-local drafts; demo messages are not sent to GitHub.
 
 ## Create your workspace
 
-Open [the setup wizard](https://ghrew.inchi.dev/create/), install and authorize
-Ghrew Creator in your organization, then choose the shared site or your own
-Pages client. The wizard restores progress after a reload in the same tab and
-checks administrator sign-in, vault access and public Discussions before offering
-the workspace link. An own-client installation also waits for its Pages workflow
-to succeed. GitHub still requires App creation/installation approvals
-and manually enabling Device Flow. Keep the setup tab open until completion.
+Use [Deploy to Cloudflare](https://deploy.workers.cloudflare.com/?url=https://github.com/inchidev/ghrew),
+then open `/create/` on your own deployment. The wizard registers your own GitHub
+App and creates the two workspace repositories. GitHub still requires App
+registration and installation approvals. Organization base permissions must be
+**None** before creating the private vault. See [the Cloudflare guide](docs/cloudflare-backend.md).
+A fresh independent deployment and a second participant still need live verification.
 
-The shared Creator service must be provisioned before this browser flow can be
-used on the new deployment. Until then, the CLI below is the supported starting
-point for a fresh installation. The one-click flow is a roadmap goal.
+The optional legacy static/Actions installer creates an additional auth mailbox
+and requires Device Flow. Its separate CLI/Creator setup is documented in
+[legacy self-hosting](docs/self-hosting.md).
 
-The installer also supports a local CLI alternative. Each workspace uses its own
-GitHub App and keys. A shared frontend can access your browser session and
-decrypted messages; your own Pages deployment lets you control the client code
-and updates. Revoking Creator removes its provisioning access.
-
-```sh
-npm ci
-# Requires Node.js 24, gh CLI login, and organization-owner access.
-npm run setup -- --organization YOUR_ORG --own-client
-```
-
-Organization base permissions must be **None** before creating the vault. Ghrew
-stops rather than silently changing access to unrelated repositories. Review the
-App registration in GitHub, enable Device Flow, and install the workspace App
-only on its three workspace repositories. The CLI prints the next links.
-
-The browser installer additionally needs a configured and installed global
-Creator App. It explicitly reports unfinished registration steps; it does not
-label a partially installed workspace as ready.
-
-[Self-hosting](docs/self-hosting.md) · [Architecture and trust boundaries](docs/architecture.md)
+[Architecture and trust boundaries](docs/architecture.md)
 
 ## Development and validation
 
@@ -121,10 +111,9 @@ is selected; it cannot provide the administrator-only vault transport.
 Unit and browser tests cover encryption, identity binding, vault permissions,
 installer guards, public/private messaging, logout, drafts, threads and phone
 navigation. Browser APIs are mocked: those checks do not prove a live App
-registration, GitHub authorization or deployment. Live authorization, vault provisioning, encrypted private writes, client reads
-and logout were verified under the previous GitWok names in `inchidev`; these are
-historical baseline checks, not proof of a freshly provisioned Ghrew sandbox. A new team's browser installation
-and a second participant's access still need their own live verification.
+registration, GitHub authorization or deployment. Live sandbox verification is
+recorded separately in [the backend guide](docs/cloudflare-backend.md), including
+which accounts and deployment paths have actually been checked.
 
 ## Stack, storage and updates
 
@@ -137,7 +126,7 @@ minutes or manually; public messages refresh every twenty seconds while visible.
 Templates copy code, not Discussions or secrets, and do not automatically receive
 updates. Review upstream changes before applying and redeploying your own copy.
 GitHub Free permits private repositories and unlimited collaborators; paid
-organization plans have their own seat billing. The public auth repository uses
+organization plans have their own seat billing. The legacy public auth repository uses
 standard public Actions runners; abuse and GitHub execution limits still apply.
 
 MIT licensed. [DIRECTION.md](DIRECTION.md) records the visual direction.

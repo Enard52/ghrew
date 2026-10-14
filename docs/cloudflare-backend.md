@@ -111,7 +111,9 @@ References: [GitHub App manifests](https://docs.github.com/en/apps/sharing-githu
 ## Sandbox verification, 2026-10-14
 
 The maintained sandbox at `ghrew.inchi.dev` uses the public
-`ghrew-sandbox-by-inchi` App, owned by `inchidev`. Its API runs in the
+`ghrew-sandbox-by-inchi` App, owned by `inchidev` and installed only on
+`ghrew-sandbox/ghrew-chat` and `ghrew-sandbox/ghrew-vault`. The source remains
+`inchidev/ghrew`. Its API runs in the
 `ghrew-api` Worker with D1; the existing GitHub Pages client routes `/api/*`
 through Cloudflare. Independent deployments use the single-Worker package above.
 
@@ -120,3 +122,40 @@ selected-repository installation, checkpointed creation of public `ghrew-chat`
 and private `ghrew-vault`, and public and private message delivery. A second
 participant and a fresh independent Cloudflare deployment still require live
 verification; mocked tests do not establish those results.
+
+### Sandbox organization move, 2026-10-14
+
+The existing public `ghrew-chat` and private `ghrew-vault` repositories were
+transferred from `inchidev` to `ghrew-sandbox`; their repository, Discussion and
+comment IDs were preserved. Only the OSS source `inchidev/ghrew` remains in
+`inchidev` for this product. No `ghrew-auth` repository is used in backend mode.
+
+`ghrew-sandbox` has base repository permission None. The vault remains private,
+with only the declared workspace administrator and no repository teams. Its
+`.ghrew/members.json` organization changed to `ghrew-sandbox`; member IDs,
+administrator IDs and registration flags were preserved.
+
+The existing public App remains registered under `inchidev`. Its new selected
+installation in `ghrew-sandbox` includes only `ghrew-chat` and `ghrew-vault`;
+no installation remains in `inchidev`. The backend's workspace record now uses
+the transferred paths and new installation, and `SANDBOX_ORGANIZATION` is
+`ghrew-sandbox`. The D1 binding, setup secret and App credentials were retained.
+GitHub Pages continues to publish the frontend from `inchidev/ghrew`.
+
+The old `inchidev` workspace lookup is retained as a compatibility alias whose
+value points to the canonical `ghrew-sandbox` workspace. This preserves existing
+`?workspace=inchidev/ghrew-chat` links without recreating repositories or granting
+access through the source organization. Both lookups use the new vault and its
+organization membership checks. Keep this alias synchronized with later moves.
+
+The browser must use the workspace selected by the backend before a stored
+repository preference. A returning browser can otherwise keep the old owner,
+read public messages through GitHub redirects, and omit the private channel.
+The backend browser regression seeds that stale preference and checks the
+canonical organization, private read and logout cleanup.
+
+Chrome owner checks confirm public history, private history, a private message
+write, sign-out clearing the chat, and normal GitHub sign-in into the new
+organization. These are owner checks; a second independent participant and a
+fresh self-hosted deployment remain unverified. Private Git mirrors, Discussion
+snapshots and pre-move configuration are retained outside the public repository.
