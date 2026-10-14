@@ -257,8 +257,22 @@ test("cookie sessions use the backend workspace despite a stale browser preferen
     }
     throw new Error("Unexpected API request " + path);
   });
-  await page.goto("/");
+  await page.goto("/?workspace=old-team/ghrew-chat&channel=private-channel");
   await expect(page.locator(".workspace-switch")).toHaveText("team");
+  await expect(
+    page.getByRole("heading", { name: "Private room", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Only permitted participants can see this."),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Private room", exact: true }),
+  ).toBeVisible();
+  await page.goto("/?channel=missing-channel");
+  await expect(
+    page.getByRole("heading", { name: "# general", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: /Private room/ }).click();
   await expect(
     page.getByText("Only permitted participants can see this."),

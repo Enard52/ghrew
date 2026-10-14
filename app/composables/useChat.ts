@@ -28,9 +28,9 @@ export function useChat(
   const queryClient = useQueryClient();
   const online = useOnline();
   const visibility = useDocumentVisibility();
-  const selectedChannel = ref(
-    new URL(window.location.href).searchParams.get("channel") || "",
-  );
+  let pendingInitialChannel =
+    new URL(window.location.href).searchParams.get("channel") || "";
+  const selectedChannel = ref(pendingInitialChannel);
   const selectedThread = ref("");
   const search = ref("");
   const localMessages = useLocalStorage<Message[]>(
@@ -235,19 +235,39 @@ export function useChat(
   );
 
   watch(scope, () => {
-    selectedChannel.value = "";
+    selectedChannel.value = pendingInitialChannel;
     selectedThread.value = "";
     search.value = "";
   });
   watch(
-    channels,
-    (value) => {
-      if (!value.some((item) => item.id === selectedChannel.value))
-        selectedChannel.value = value[0]?.id || "";
+    [
+      channels,
+      authenticated,
+      channelsQuery.isPending,
+      vaultChannelsQuery.isPending,
+    ],
+    ([value]) => {
+      if (value.some((item) => item.id === selectedChannel.value)) {
+        pendingInitialChannel = "";
+        return;
+      }
+      // A linked private channel is absent until both identity and the vault list arrive.
+      if (
+        pendingInitialChannel &&
+        !preview.value &&
+        (!authenticated.value ||
+          channelsQuery.isPending.value ||
+          (mailbox?.value?.vault && vaultChannelsQuery.isPending.value))
+      )
+        return;
+      pendingInitialChannel = "";
+      selectedChannel.value = value[0]?.id || "";
     },
     { immediate: true },
   );
   watch(selectedChannel, (id) => {
+    if (pendingInitialChannel && id !== pendingInitialChannel)
+      pendingInitialChannel = "";
     selectedThread.value = "";
     search.value = "";
     const url = new URL(window.location.href);
